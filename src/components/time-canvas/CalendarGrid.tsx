@@ -348,7 +348,10 @@ export function CalendarGrid() {
   const layouts = useMemo(() => getEventsLayout(activeTodos), [activeTodos]);
 
   useEffect(() => {
-    if (scrollRef.current) { scrollRef.current.scrollTop = 8 * HOUR_HEIGHT - 20; }
+    if (scrollRef.current) {
+      const startHour = useStore.getState().settings.canvasStartHour ?? 8;
+      scrollRef.current.scrollTop = startHour * HOUR_HEIGHT - 20;
+    }
   }, [timeCanvasSelectedDate]);
 
   const getRelativeY = useCallback((clientY: number): number => {

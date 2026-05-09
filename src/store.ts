@@ -49,6 +49,7 @@ export interface AppSettings {
   defaultView: 'todos' | 'bookmarks' | 'notes';
   theme: 'dark' | 'light';
   userName: string;
+  canvasStartHour: number; // hour to auto-scroll to in Canvas view, default 8
 }
 
 export interface Note {
@@ -241,6 +242,7 @@ export const useStore = create<AppState>()(
         defaultView: 'todos',
         theme: 'dark',
         userName: 'User',
+        canvasStartHour: 8,
       },
       updateSettings: (partial) =>
         set((state) => ({
