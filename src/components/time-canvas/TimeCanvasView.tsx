@@ -1,9 +1,8 @@
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useStore, EisenhowerQuadrant } from '../../store';
 import { EisenhowerMatrix } from './EisenhowerMatrix';
 import { CalendarGrid } from './CalendarGrid';
 import { DndContext, DragEndEvent, closestCorners } from '@dnd-kit/core';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 import { format, parseISO, addDays, subDays, isToday, isTomorrow, isYesterday } from 'date-fns';
 import { CaretLeft, CaretRight, CalendarBlank } from '@phosphor-icons/react';
 
@@ -23,18 +22,7 @@ export function TimeCanvasView() {
     return todos.filter(t => t.date === timeCanvasSelectedDate && t.categoryId === activeCategoryId && !t.parentId);
   }, [todos, timeCanvasSelectedDate, activeCategoryId]);
 
-  // Auto-fullscreen mode for the canvas
-  useEffect(() => {
-    try {
-      const win = getCurrentWindow();
-      win.setFullscreen(true).catch(() => {});
-      return () => {
-        win.setFullscreen(false).catch(() => {});
-      };
-    } catch (e) {
-      // Ignore if not in Tauri
-    }
-  }, []);
+  // No longer auto-fullscreen — user controls this via the window toggle button
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
