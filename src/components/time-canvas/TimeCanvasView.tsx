@@ -1,9 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useStore, EisenhowerQuadrant } from '../../store';
 import { EisenhowerMatrix } from './EisenhowerMatrix';
 import { CalendarGrid } from './CalendarGrid';
 import { DndContext, DragEndEvent, closestCorners } from '@dnd-kit/core';
-import { useEffect } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { format, parseISO, addDays, subDays, isToday, isTomorrow, isYesterday } from 'date-fns';
 import { CaretLeft, CaretRight } from '@phosphor-icons/react';
