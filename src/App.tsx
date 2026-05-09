@@ -982,6 +982,45 @@ export default function App() {
 
         {appMode === 'todos' ? (
           <>
+          {/* Today's Schedule - shows time-blocked tasks from the Canvas */}
+          {dateString === todayString && (() => {
+            const scheduledTodos = todos
+              .filter(t => t.categoryId === activeCategoryId && t.date === todayString && t.startTime && !t.parentId)
+              .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+            if (scheduledTodos.length === 0) return null;
+            return (
+              <div className="todays-schedule-widget">
+                <div className="schedule-widget-header">
+                  <span className="schedule-widget-title">Today's Schedule</span>
+                  <span className="schedule-widget-count">{scheduledTodos.length} time-blocked</span>
+                </div>
+                <div className="schedule-widget-items">
+                  {scheduledTodos.map(todo => (
+                    <div
+                      key={todo.id}
+                      className={`schedule-widget-item ${todo.completed ? 'completed' : ''}`}
+                      onClick={() => toggleTodo(todo.id)}
+                    >
+                      <span className="schedule-widget-time">
+                        {todo.startTime}{todo.endTime ? `–${todo.endTime}` : ''}
+                      </span>
+                      {todo.eisenhowerQuadrant && (
+                        <div
+                          className="schedule-widget-dot"
+                          style={{ background: QUADRANT_COLORS[todo.eisenhowerQuadrant] }}
+                        />
+                      )}
+                      <span className="schedule-widget-text">
+                        {todo.text.replace('!!', '').trim()}
+                      </span>
+                      {todo.completed && <Check size={12} style={{ color: 'var(--accent)', flexShrink: 0 }} />}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Overdue Tasks Section */}
           {overdueTodos.length > 0 && (
             <div style={{ marginBottom: '16px', padding: '12px 16px', border: '1px solid rgba(255, 74, 74, 0.3)', background: 'rgba(255, 74, 74, 0.05)' }}>
@@ -1066,19 +1105,46 @@ export default function App() {
                     <GripVertical size={16} />
                   </div>
 
-                  {/* Eisenhower quadrant color indicator */}
+                  {/* Eisenhower quadrant color indicator + badge */}
                   {todo.eisenhowerQuadrant && (
                     <div
+                      className="eisenhower-indicator"
                       title={todo.eisenhowerQuadrant.replace(/-/g, ' ')}
                       style={{
-                        width: 4,
-                        height: 24,
-                        borderRadius: 2,
-                        background: QUADRANT_COLORS[todo.eisenhowerQuadrant] || 'transparent',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
                         flexShrink: 0,
-                        marginRight: -8,
+                        marginRight: -4,
                       }}
-                    />
+                    >
+                      <div
+                        style={{
+                          width: 4,
+                          height: 24,
+                          borderRadius: 2,
+                          background: QUADRANT_COLORS[todo.eisenhowerQuadrant] || 'transparent',
+                        }}
+                      />
+                      <span
+                        className="eisenhower-badge"
+                        style={{
+                          fontSize: '0.55rem',
+                          fontWeight: 700,
+                          letterSpacing: '0.5px',
+                          textTransform: 'uppercase',
+                          color: QUADRANT_COLORS[todo.eisenhowerQuadrant],
+                          background: `${QUADRANT_COLORS[todo.eisenhowerQuadrant]}15`,
+                          border: `1px solid ${QUADRANT_COLORS[todo.eisenhowerQuadrant]}30`,
+                          padding: '2px 5px',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {todo.eisenhowerQuadrant === 'urgent-important' ? 'DO' :
+                         todo.eisenhowerQuadrant === 'not-urgent-important' ? 'SCHEDULE' :
+                         todo.eisenhowerQuadrant === 'urgent-not-important' ? 'DELEGATE' : 'ELIMINATE'}
+                      </span>
+                    </div>
                   )}
                   
                   <div
