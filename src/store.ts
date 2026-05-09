@@ -186,6 +186,7 @@ interface AppState {
   addChallenge: (name: string, emoji: string, targetDays: number) => void;
   removeChallenge: (id: string) => void;
   toggleChallengeDay: (challengeId: string, date: string) => void;
+  setChallengeDay: (challengeId: string, date: string, status: 'success' | 'fail' | null) => void;
   setActiveChallenge: (id: string | null) => void;
   archiveChallenge: (id: string) => void;
 
@@ -323,6 +324,20 @@ export const useStore = create<AppState>()(
               delete entries[date];
             } else {
               entries[date] = 'success';
+            }
+            return { ...c, entries };
+          }),
+        })),
+
+      setChallengeDay: (challengeId, date, status) =>
+        set((state) => ({
+          challenges: state.challenges.map((c) => {
+            if (c.id !== challengeId) return c;
+            const entries = { ...c.entries };
+            if (status === null) {
+              delete entries[date];
+            } else {
+              entries[date] = status;
             }
             return { ...c, entries };
           }),
