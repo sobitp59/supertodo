@@ -29,6 +29,8 @@ import { YearlyGoalsView } from './components/YearlyGoalsView';
 import { JobTrackerView } from './components/JobTrackerView';
 import { ContextMenu, ContextMenuItem } from './components/ContextMenu';
 import { TimeCanvasView } from './components/time-canvas/TimeCanvasView';
+import { QUADRANT_COLORS } from './components/time-canvas/EisenhowerMatrix';
+import { ClockDisplay, useGreeting } from './components/ClockDisplay';
 import './App.css';
 
 // Ordinal suffix for dates (1st, 2nd, 3rd, 4th, etc.)
@@ -45,26 +47,45 @@ const formatDateDisplay = (date: Date) => {
   return `${dayName}, ${day} ${monthYear}`;
 };
 
-// Native Link Preview Component (Zero Dependency iframe alternative)
+// Link preview cache to avoid repeated API calls
+const linkPreviewCache = new Map<string, { title: string; description?: string; image?: string } | null>();
+
+// Native Link Preview Component with caching
 const NativeLinkPreview = ({ url, compact = false }: { url: string; compact?: boolean }) => {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<{ title: string; description?: string; image?: string } | null>(
+    linkPreviewCache.get(url) ?? null
+  );
+  const [loading, setLoading] = useState(!linkPreviewCache.has(url));
   
   useEffect(() => {
+    // Already cached (hit or miss)
+    if (linkPreviewCache.has(url)) {
+      setData(linkPreviewCache.get(url) ?? null);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}`)
       .then(r => r.json())
-      .then(d => { if (d.status === 'success') setData(d.data); })
-      .catch(() => {})
+      .then(d => {
+        if (d.status === 'success' && d.data?.title) {
+          const preview = { title: d.data.title, description: d.data.description, image: d.data.image?.url };
+          linkPreviewCache.set(url, preview);
+          setData(preview);
+        } else {
+          linkPreviewCache.set(url, null); // Cache the miss too
+        }
+      })
+      .catch(() => { linkPreviewCache.set(url, null); })
       .finally(() => setLoading(false));
   }, [url]);
 
-  if (loading) return null;
-  if (!data || !data.title) return null;
+  if (loading || !data) return null;
   
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" className={`native-link-preview ${compact ? 'compact' : ''}`}>
-      {data.image?.url && <img src={data.image.url} alt="preview" className="preview-img" />}
+      {data.image && <img src={data.image} alt="preview" className="preview-img" />}
       <div className="preview-text">
         <h4>{data.title}</h4>
         <p>{data.description?.substring(0, 80)}...</p>
@@ -147,7 +168,6 @@ export default function App() {
   } = useStore();
 
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isAddingTodo, setIsAddingTodo] = useState(false);
@@ -221,15 +241,13 @@ export default function App() {
     document.documentElement.style.setProperty('--accent', settings.accentColor);
   }, [settings.accentColor]);
 
-  // Clock & Pomodoro loop
+  // Pomodoro timer loop
   useEffect(() => {
+    if (!isPomodoroRunning) return; // Don't run interval if Pomodoro isn't active
     const timer = setInterval(() => {
-      setCurrentTime(new Date());
-
-      // Pomodoro decrease logic
-      if (isPomodoroRunning && pomodoroTimeLeft > 0) {
+      if (pomodoroTimeLeft > 0) {
         setPomodoroTimeLeft((prev) => prev - 1);
-      } else if (isPomodoroRunning && pomodoroTimeLeft === 0) {
+      } else {
         setIsPomodoroRunning(false);
         setActivePomodoroId(null);
         try {
@@ -374,11 +392,19 @@ export default function App() {
   }, [isZenMode, setZenMode, activeBookmarkCategoryId, activeBookmarkFolderId, addBookmark, contextMenu, setSearchOpen, settings.autoStartEnabled]);
 
   const dateString = format(currentDate, 'yyyy-MM-dd');
+  const todayString = format(new Date(), 'yyyy-MM-dd');
 
   // Filter todos by category, date, hashtag, and exclude subtasks (they'll be rendered under parents)
   let activeTodos = todos.filter(
     (t) => t.categoryId === activeCategoryId && t.date === dateString && !t.parentId
   );
+
+  // Overdue todos: uncompleted tasks from past dates (only show when viewing today)
+  const overdueTodos = dateString === todayString
+    ? todos.filter(
+        (t) => t.categoryId === activeCategoryId && t.date < todayString && !t.completed && !t.parentId
+      )
+    : [];
 
   // Apply hashtag filter
   if (activeHashtagFilter) {
@@ -561,12 +587,7 @@ export default function App() {
     }
   };
 
-  const getGreeting = () => {
-    const hour = currentTime.getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-  };
+  const greeting = useGreeting();
 
   return (
     <>
@@ -583,7 +604,7 @@ export default function App() {
       <header className="header">
         {/* Left side: draggable area for moving the window */}
         <div data-tauri-drag-region>
-          <span className="header-greeting">{getGreeting()}, {settings.userName}</span>
+          <span className="header-greeting">{greeting}, {settings.userName}</span>
           <div className="date-container">
             <div className="nav-arrows">
               <button className="nav-btn" onClick={handlePrevDay}>
@@ -619,7 +640,7 @@ export default function App() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div className="time-text" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {format(currentTime, 'h:mma').toLowerCase()}
+            <ClockDisplay />
             <button
               className="icon-btn"
               onClick={() => setIsSettingsOpen(true)}
@@ -629,6 +650,24 @@ export default function App() {
               <Settings size={18} />
             </button>
             <ProgressRing radius={16} stroke={3} progress={progressPercent} />
+            {/* Global Pomodoro indicator in header */}
+            {activePomodoroId && (
+              <div
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '3px 10px', background: 'rgba(42,221,132,0.1)',
+                  border: '1px solid rgba(42,221,132,0.3)', borderRadius: '4px',
+                  cursor: 'pointer',
+                }}
+                onClick={() => setIsPomodoroRunning(!isPomodoroRunning)}
+                title={isPomodoroRunning ? 'Click to pause' : 'Click to resume'}
+              >
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: isPomodoroRunning ? 'var(--accent)' : 'var(--text-secondary)', boxShadow: isPomodoroRunning ? '0 0 6px var(--accent)' : 'none', animation: isPomodoroRunning ? 'pulse 2s infinite' : 'none' }} />
+                <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent)', letterSpacing: '0.5px' }}>
+                  {Math.floor(pomodoroTimeLeft / 60).toString().padStart(2, '0')}:{(pomodoroTimeLeft % 60).toString().padStart(2, '0')}
+                </span>
+              </div>
+            )}
           </div>
           {/* Window controls — NO drag region here */}
           <div style={{ display: 'flex', gap: 2 }}>
@@ -783,8 +822,43 @@ export default function App() {
                         className="tab-delete-btn"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (appMode === 'todos') removeCategory(cat.id);
-                          else if (appMode === 'bookmarks') removeBookmarkCategory(cat.id);
+                          if (appMode === 'todos') {
+                            const catData = categories.find(c => c.id === cat.id);
+                            const catTodos = todos.filter(t => t.categoryId === cat.id);
+                            removeCategory(cat.id);
+                            toast('Category deleted', {
+                              action: {
+                                label: 'Undo',
+                                onClick: () => {
+                                  if (catData) {
+                                    useStore.setState((s) => ({
+                                      categories: [...s.categories, catData],
+                                      todos: [...s.todos, ...catTodos],
+                                      activeCategoryId: catData.id,
+                                    }));
+                                  }
+                                },
+                              },
+                            });
+                          } else if (appMode === 'bookmarks') {
+                            const catData = bookmarkCategories.find(c => c.id === cat.id);
+                            const catBookmarks = bookmarks.filter(b => b.categoryId === cat.id);
+                            removeBookmarkCategory(cat.id);
+                            toast('Category deleted', {
+                              action: {
+                                label: 'Undo',
+                                onClick: () => {
+                                  if (catData) {
+                                    useStore.setState((s) => ({
+                                      bookmarkCategories: [...s.bookmarkCategories, catData],
+                                      bookmarks: [...s.bookmarks, ...catBookmarks],
+                                      activeBookmarkCategoryId: catData.id,
+                                    }));
+                                  }
+                                },
+                              },
+                            });
+                          }
                         }}
                         title="Delete Category"
                       >
@@ -907,6 +981,62 @@ export default function App() {
         </AnimatePresence>
 
         {appMode === 'todos' ? (
+          <>
+          {/* Overdue Tasks Section */}
+          {overdueTodos.length > 0 && (
+            <div style={{ marginBottom: '16px', padding: '12px 16px', border: '1px solid rgba(255, 74, 74, 0.3)', background: 'rgba(255, 74, 74, 0.05)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--high-priority)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Overdue ({overdueTodos.length})
+                </span>
+                <button
+                  onClick={() => {
+                    // Move all overdue to today
+                    overdueTodos.forEach(t => {
+                      editTodo(t.id, t.text); // trigger re-render
+                      useStore.getState().todos.find(todo => todo.id === t.id)!.date = todayString;
+                    });
+                    useStore.setState({ todos: [...useStore.getState().todos] });
+                    toast.success(`Moved ${overdueTodos.length} tasks to today`);
+                  }}
+                  style={{ fontSize: '0.7rem', background: 'transparent', border: '1px solid rgba(255,74,74,0.4)', color: 'var(--high-priority)', padding: '3px 8px', cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  Move all to today
+                </button>
+              </div>
+              {overdueTodos.slice(0, 10).map(todo => (
+                <div key={todo.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div
+                    className="todo-checkbox"
+                    onClick={() => toggleTodo(todo.id)}
+                    style={{ width: 18, height: 18 }}
+                  />
+                  <span style={{ flex: 1, fontSize: '0.85rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {todo.text.replace('!!', '')}
+                  </span>
+                  <span style={{ fontSize: '0.65rem', color: 'rgba(255,74,74,0.7)' }}>{todo.date}</span>
+                  <button
+                    onClick={() => {
+                      // Move single task to today
+                      const allTodos = useStore.getState().todos.map(t => t.id === todo.id ? { ...t, date: todayString } : t);
+                      useStore.setState({ todos: allTodos });
+                      toast.success('Moved to today');
+                    }}
+                    style={{ fontSize: '0.6rem', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 6px', cursor: 'pointer', fontFamily: 'inherit' }}
+                    title="Move to today"
+                  >
+                    →today
+                  </button>
+                </div>
+              ))}
+              {overdueTodos.length > 10 && (
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                  +{overdueTodos.length - 10} more overdue tasks
+                </div>
+              )}
+            </div>
+          )}
+
           <Reorder.Group 
             axis="y" 
             values={activeTodos} 
@@ -935,6 +1065,21 @@ export default function App() {
                   <div className="drag-handle">
                     <GripVertical size={16} />
                   </div>
+
+                  {/* Eisenhower quadrant color indicator */}
+                  {todo.eisenhowerQuadrant && (
+                    <div
+                      title={todo.eisenhowerQuadrant.replace(/-/g, ' ')}
+                      style={{
+                        width: 4,
+                        height: 24,
+                        borderRadius: 2,
+                        background: QUADRANT_COLORS[todo.eisenhowerQuadrant] || 'transparent',
+                        flexShrink: 0,
+                        marginRight: -8,
+                      }}
+                    />
+                  )}
                   
                   <div
                     className={`todo-checkbox ${todo.completed ? 'checked' : ''}`}
@@ -1079,7 +1224,21 @@ export default function App() {
                     <button
                       className="icon-btn delete"
                       title="Remove task"
-                      onClick={() => removeTodo(todo.id)}
+                      onClick={() => {
+                        const todoData = todos.find(t => t.id === todo.id);
+                        const subtasks = todos.filter(t => t.parentId === todo.id);
+                        removeTodo(todo.id);
+                        toast('Task deleted', {
+                          action: {
+                            label: 'Undo',
+                            onClick: () => {
+                              if (todoData) {
+                                useStore.setState((s) => ({ todos: [...s.todos, todoData, ...subtasks] }));
+                              }
+                            },
+                          },
+                        });
+                      }}
                     >
                       <X size={16} />
                     </button>
@@ -1188,6 +1347,7 @@ export default function App() {
             })}
           </AnimatePresence>
         </Reorder.Group>
+        </>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* Bookmark Folders */}

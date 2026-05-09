@@ -3,6 +3,7 @@ import { useStore } from '../store';
 import type { JobApplication } from '../store';
 import { Plus, Trash, PencilSimple, ArrowSquareOut, Buildings, MapPin, CurrencyDollar } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 const STATUSES: { value: JobApplication['status']; label: string; color: string }[] = [
   { value: 'wishlist', label: 'wishlist', color: '#636e72' },
@@ -291,7 +292,20 @@ export function JobTrackerView() {
                     <div style={{ flex: 1 }} />
                     <button
                       className="icon-btn"
-                      onClick={() => removeJobApplication(job.id)}
+                      onClick={() => {
+                        const jobData = jobApplications.find(j => j.id === job.id);
+                        removeJobApplication(job.id);
+                        toast('Application deleted', {
+                          action: {
+                            label: 'Undo',
+                            onClick: () => {
+                              if (jobData) {
+                                useStore.setState((s) => ({ jobApplications: [...s.jobApplications, jobData] }));
+                              }
+                            },
+                          },
+                        });
+                      }}
                       title="Delete"
                       style={{ color: 'var(--high-priority)' }}
                     >
