@@ -1,11 +1,11 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { useStore, EisenhowerQuadrant } from '../../store';
 import { EisenhowerMatrix } from './EisenhowerMatrix';
 import { CalendarGrid } from './CalendarGrid';
 import { DndContext, DragEndEvent, closestCorners } from '@dnd-kit/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { format, parseISO, addDays, subDays, isToday, isTomorrow, isYesterday } from 'date-fns';
-import { CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, CalendarBlank } from '@phosphor-icons/react';
 
 export function TimeCanvasView() {
   const { 
@@ -16,6 +16,8 @@ export function TimeCanvasView() {
       updateTodoTime,
       activeCategoryId
   } = useStore();
+
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   const activeTodos = useMemo(() => {
     return todos.filter(t => t.date === timeCanvasSelectedDate && t.categoryId === activeCategoryId && !t.parentId);
@@ -41,11 +43,9 @@ export function TimeCanvasView() {
     const todoId = active.id as string;
     let overId = over.id as string;
     
-    // Check if dropped directly onto a sortable item instead of the droppable zone
     const isQuadrantDrop = ['urgent-important', 'not-urgent-important', 'urgent-not-important', 'not-urgent-not-important', 'unclassified'].includes(overId);
     
     if (!isQuadrantDrop && !overId.startsWith('calendar-')) {
-        // find which quadrant this item belongs to
         const overTodo = activeTodos.find(t => t.id === overId);
         if (overTodo) {
             overId = overTodo.eisenhowerQuadrant || 'unclassified';
@@ -53,15 +53,11 @@ export function TimeCanvasView() {
     }
 
     if (overId.startsWith('calendar-')) {
-        // Handle dropping onto calendar slot
-        // ID format: 'calendar-09:00'
         const timeStr = overId.replace('calendar-', '');
         const hour = parseInt(timeStr.split(':')[0], 10);
         const endStr = `${(hour + 1).toString().padStart(2, '0')}:00`;
-        
         updateTodoTime(todoId, timeStr, endStr);
     } else {
-        // Handle dropping into matrix
         if (overId === 'unclassified') {
            updateTodoQuadrant(todoId, undefined);
         } else {
@@ -101,19 +97,19 @@ export function TimeCanvasView() {
                 <h2 style={{ margin: 0, fontSize: '1.2rem' }}>Canvas</h2>
               </div>
               
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--surface-light)', padding: '4px 8px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface)', padding: '4px 8px', border: '1px solid var(--border)' }}>
                 <button onClick={handlePrevDay} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', padding: '4px' }}>
-                  <CaretLeft size={20} />
+                  <CaretLeft size={18} />
                 </button>
                 
                 <div 
                   onClick={handleToday}
                   style={{ 
                     fontFamily: 'Space Mono, monospace', 
-                    fontSize: '1rem', 
+                    fontSize: '0.9rem', 
                     fontWeight: 600, 
                     color: 'var(--text-primary)',
-                    minWidth: '120px',
+                    minWidth: '110px',
                     textAlign: 'center',
                     cursor: 'pointer'
                   }}
@@ -123,13 +119,23 @@ export function TimeCanvasView() {
                 </div>
                 
                 <button onClick={handleNextDay} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', padding: '4px' }}>
-                  <CaretRight size={20} />
+                  <CaretRight size={18} />
+                </button>
+
+                {/* Date picker button */}
+                <button
+                  onClick={() => dateInputRef.current?.showPicker()}
+                  style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', padding: '4px 6px', alignItems: 'center', gap: '4px', fontSize: '0.7rem' }}
+                  title="Pick a date"
+                >
+                  <CalendarBlank size={16} />
                 </button>
                 
                 <input 
+                  ref={dateInputRef}
                   type="date" 
                   value={timeCanvasSelectedDate} 
-                  onChange={(e) => setTimeCanvasSelectedDate(e.target.value)}
+                  onChange={(e) => { if (e.target.value) setTimeCanvasSelectedDate(e.target.value); }}
                   style={{ 
                     position: 'absolute',
                     opacity: 0,
