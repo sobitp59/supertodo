@@ -1,8 +1,26 @@
-import { Trash, Notebook, FileText, PencilSimple, Eye } from '@phosphor-icons/react';
+import { Trash, Notebook, FileText, TextB, TextItalic, Code, ListBullets, Link, Quotes, TextStrikethrough, MagnifyingGlass, X, Check } from '@phosphor-icons/react';
 import { useStore } from '../store';
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+
+// Formatting helpers
+function wrapSelection(textarea: HTMLTextAreaElement, before: string, after: string) {
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const text = textarea.value;
+  const selected = text.substring(start, end);
+  const replacement = before + (selected || 'text') + after;
+  const newValue = text.substring(0, start) + replacement + text.substring(end);
+  return { newValue, cursorStart: start + before.length, cursorEnd: start + before.length + (selected || 'text').length };
+}
+
+function insertAtCursor(textarea: HTMLTextAreaElement, insertion: string) {
+  const start = textarea.selectionStart;
+  const text = textarea.value;
+  const newValue = text.substring(0, start) + insertion + text.substring(start);
+  return { newValue, cursor: start + insertion.length };
+}
 
 export function NotesView() {
   const notes = useStore((state) => state.notes);
@@ -13,18 +31,160 @@ export function NotesView() {
   const removeNote = useStore((state) => state.removeNote);
   const setActiveNote = useStore((state) => state.setActiveNote);
 
-  const [showPreview, setShowPreview] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [showSaved, setShowSaved] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [matchCount, setMatchCount] = useState(0);
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeNote = notes.find((n) => n.id === activeNoteId);
   const filteredNotes = notes.filter((n) => n.categoryId === activeNoteCategoryId);
 
+  // Show save indicator when content changes
+  const handleContentChange = useCallback((newContent: string) => {
+    if (!activeNote) return;
+    updateNote(activeNote.id, activeNote.title, newContent);
 
+    // Debounce save indicator
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      setSavedAt(Date.now());
+      setShowSaved(true);
+      setTimeout(() => setShowSaved(false), 2500);
+    }, 600);
+  }, [activeNote, updateNote]);
+
+  const handleTitleChange = useCallback((newTitle: string) => {
+    if (!activeNote) return;
+    updateNote(activeNote.id, newTitle, activeNote.content);
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      setSavedAt(Date.now());
+      setShowSaved(true);
+      setTimeout(() => setShowSaved(false), 2500);
+    }, 600);
+  }, [activeNote, updateNote]);
+
+  // Toolbar actions
+  const applyFormat = useCallback((format: string) => {
+    const ta = textareaRef.current;
+    if (!ta || !activeNote) return;
+
+    let result: { newValue: string; cursorStart?: number; cursorEnd?: number; cursor?: number };
+
+    switch (format) {
+      case 'bold':
+        result = wrapSelection(ta, '**', '**');
+        break;
+      case 'italic':
+        result = wrapSelection(ta, '*', '*');
+        break;
+      case 'strikethrough':
+        result = wrapSelection(ta, '~~', '~~');
+        break;
+      case 'code':
+        result = wrapSelection(ta, '`', '`');
+        break;
+      case 'link':
+        result = wrapSelection(ta, '[', '](url)');
+        break;
+      case 'bullet':
+        result = insertAtCursor(ta, '\n- ');
+        break;
+      case 'quote':
+        result = insertAtCursor(ta, '\n> ');
+        break;
+      case 'heading':
+        result = insertAtCursor(ta, '\n## ');
+        break;
+      default:
+        return;
+    }
+
+    updateNote(activeNote.id, activeNote.title, result.newValue);
+
+    // Restore cursor
+    setTimeout(() => {
+      ta.focus();
+      if ('cursorStart' in result && result.cursorStart !== undefined && result.cursorEnd !== undefined) {
+        ta.setSelectionRange(result.cursorStart, result.cursorEnd);
+      } else if ('cursor' in result && result.cursor !== undefined) {
+        ta.setSelectionRange(result.cursor, result.cursor);
+      }
+    }, 0);
+  }, [activeNote, updateNote]);
+
+  // Keyboard shortcuts in textarea
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.ctrlKey || e.metaKey) {
+      switch (e.key) {
+        case 'b':
+          e.preventDefault();
+          applyFormat('bold');
+          break;
+        case 'i':
+          e.preventDefault();
+          applyFormat('italic');
+          break;
+        case 'k':
+          e.preventDefault();
+          applyFormat('link');
+          break;
+        case 'f':
+          e.preventDefault();
+          setSearchOpen(true);
+          setTimeout(() => searchInputRef.current?.focus(), 50);
+          break;
+      }
+    }
+    // Tab to insert spaces
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const ta = e.currentTarget;
+      const start = ta.selectionStart;
+      const newValue = ta.value.substring(0, start) + '  ' + ta.value.substring(ta.selectionEnd);
+      if (activeNote) {
+        updateNote(activeNote.id, activeNote.title, newValue);
+        setTimeout(() => ta.setSelectionRange(start + 2, start + 2), 0);
+      }
+    }
+  }, [applyFormat, activeNote, updateNote]);
+
+  // Search match count
+  useEffect(() => {
+    if (!searchTerm || !activeNote) {
+      setMatchCount(0);
+      return;
+    }
+    const regex = new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    const matches = activeNote.content.match(regex);
+    setMatchCount(matches ? matches.length : 0);
+  }, [searchTerm, activeNote]);
+
+  // Close search on Escape
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && searchOpen) {
+        setSearchOpen(false);
+        setSearchTerm('');
+        textareaRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [searchOpen]);
+
+  // Format saved timestamp
+  const savedLabel = savedAt ? `saved ${new Date(savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '';
 
   return (
     <div className="notes-split-view">
-      {/* Left Sidebar: Categories and Notes List */}
+      {/* Left Sidebar: Notes List */}
       <div className="notes-list">
-        {/* Notes List */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {filteredNotes.map((note) => (
             <div
@@ -58,69 +218,148 @@ export function NotesView() {
             <div className="empty-state" style={{ marginTop: 60 }}>
               <Notebook size={48} weight="duotone" color="var(--border)" style={{ marginBottom: 16 }} />
               <div className="empty-state-title">No Notes Here</div>
-              <p>Click "create ⚡" to start writing</p>
+              <p>Click "create" to start writing</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Right Side: Editor */}
+      {/* Right Side: Editor + Live Preview */}
       <div className="notes-editor">
         {activeNote ? (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 16 }}>
+            {/* Title + Save Indicator */}
+            <div className="notes-editor-header">
               <input
                 type="text"
                 className="notes-title-input"
                 placeholder="Note title..."
                 value={activeNote.title}
-                onChange={(e) => updateNote(activeNote.id, e.target.value, activeNote.content)}
-                style={{ flex: 1, marginRight: 16 }}
+                onChange={(e) => handleTitleChange(e.target.value)}
               />
-
-              <div className="mode-toggle-wrapper">
-                <button
-                  className={`mode-btn ${!showPreview ? 'active' : ''}`}
-                  onClick={() => setShowPreview(false)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-                >
-                  <PencilSimple size={16} /> Edit
-                </button>
-                <button
-                  className={`mode-btn ${showPreview ? 'active' : ''}`}
-                  onClick={() => setShowPreview(true)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-                >
-                  <Eye size={16} /> Preview
-                </button>
+              <div className={`notes-saved-indicator ${showSaved ? 'visible' : ''}`}>
+                <Check size={12} weight="bold" />
+                <span>{savedLabel}</span>
               </div>
             </div>
 
-            {!showPreview ? (
-              <textarea
-                className="notes-content-textarea"
-                placeholder="Write your brilliant thoughts in markdown...
-
-**Bold ideas**, *italic emphasis*, `inline code`
-- Bulleted lists
-- [Helpful Links](https://example.com)
-> Inspiring quotes
-"
-                value={activeNote.content}
-                onChange={(e) => updateNote(activeNote.id, activeNote.title, e.target.value)}
-              />
-            ) : (
-              <div
-                className="notes-content-textarea markdown-preview"
-                style={{
-                  overflow: 'auto',
-                  border: '1px solid transparent', // remove border in preview for a cleaner reading experience
-                  background: 'transparent'
+            {/* Formatting Toolbar */}
+            <div className="notes-toolbar">
+              <button className="notes-toolbar-btn" onClick={() => applyFormat('bold')} title="Bold (Ctrl+B)">
+                <TextB size={16} weight="bold" />
+              </button>
+              <button className="notes-toolbar-btn" onClick={() => applyFormat('italic')} title="Italic (Ctrl+I)">
+                <TextItalic size={16} />
+              </button>
+              <button className="notes-toolbar-btn" onClick={() => applyFormat('strikethrough')} title="Strikethrough">
+                <TextStrikethrough size={16} />
+              </button>
+              <div className="notes-toolbar-separator" />
+              <button className="notes-toolbar-btn" onClick={() => applyFormat('heading')} title="Heading">
+                <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>H2</span>
+              </button>
+              <button className="notes-toolbar-btn" onClick={() => applyFormat('bullet')} title="Bullet List">
+                <ListBullets size={16} />
+              </button>
+              <button className="notes-toolbar-btn" onClick={() => applyFormat('quote')} title="Quote">
+                <Quotes size={16} />
+              </button>
+              <div className="notes-toolbar-separator" />
+              <button className="notes-toolbar-btn" onClick={() => applyFormat('code')} title="Inline Code">
+                <Code size={16} />
+              </button>
+              <button className="notes-toolbar-btn" onClick={() => applyFormat('link')} title="Link (Ctrl+K)">
+                <Link size={16} />
+              </button>
+              <div style={{ flex: 1 }} />
+              <button
+                className={`notes-toolbar-btn ${searchOpen ? 'active' : ''}`}
+                onClick={() => {
+                  setSearchOpen(!searchOpen);
+                  if (!searchOpen) setTimeout(() => searchInputRef.current?.focus(), 50);
+                  else { setSearchTerm(''); }
                 }}
+                title="Search in note (Ctrl+F)"
               >
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{activeNote.content || '*No content yet*'}</ReactMarkdown>
+                <MagnifyingGlass size={16} />
+              </button>
+            </div>
+
+            {/* In-note Search Bar */}
+            {searchOpen && (
+              <div className="notes-search-bar">
+                <MagnifyingGlass size={14} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  className="notes-search-input"
+                  placeholder="Search in note..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setSearchOpen(false);
+                      setSearchTerm('');
+                      textareaRef.current?.focus();
+                    }
+                  }}
+                />
+                {searchTerm && (
+                  <span className="notes-search-count">
+                    {matchCount} {matchCount === 1 ? 'match' : 'matches'}
+                  </span>
+                )}
+                <button
+                  className="icon-btn"
+                  onClick={() => { setSearchOpen(false); setSearchTerm(''); }}
+                  style={{ padding: 4 }}
+                >
+                  <X size={14} />
+                </button>
               </div>
             )}
+
+            {/* Side-by-side Editor + Preview */}
+            <div className="notes-split-editor">
+              {/* Edit pane */}
+              <div className="notes-edit-pane">
+                <textarea
+                  ref={textareaRef}
+                  className="notes-content-textarea"
+                  placeholder="Write in markdown...
+
+**Bold**, *italic*, `code`
+- Lists
+> Quotes
+[Links](https://example.com)"
+                  value={activeNote.content}
+                  onChange={(e) => handleContentChange(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                />
+              </div>
+
+              {/* Preview pane */}
+              <div className="notes-preview-pane">
+                <div className="markdown-preview">
+                  {searchTerm ? (
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        // Use dangerouslySetInnerHTML for highlighted content is not ideal,
+                        // so we render without highlight in markdown and show highlight via CSS
+                        text: ({ children }) => <>{children}</>,
+                      }}
+                    >
+                      {activeNote.content || '*No content yet*'}
+                    </ReactMarkdown>
+                  ) : (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {activeNote.content || '*No content yet*'}
+                    </ReactMarkdown>
+                  )}
+                </div>
+              </div>
+            </div>
           </>
         ) : (
           <div className="empty-state" style={{ marginTop: 120 }}>

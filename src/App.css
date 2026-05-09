@@ -859,33 +859,169 @@ body {
 .notes-editor {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
   overflow: hidden;
+  height: 100%;
+}
+
+.notes-editor-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
 }
 
 .notes-title-input {
-  font-family: 'Instrument Serif', serif;
-  font-size: 3rem;
+  font-family: 'VT323', monospace;
+  font-size: 2rem;
   font-weight: 400;
   background: transparent;
   border: none;
   color: var(--text-primary);
   outline: none;
   padding: 0;
-  line-height: 1.1;
+  line-height: 1.2;
+  flex: 1;
+  letter-spacing: 0.02em;
+}
+
+.notes-saved-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--accent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.notes-saved-indicator.visible {
+  opacity: 1;
+}
+
+/* Formatting Toolbar */
+.notes-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.notes-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  padding: 0;
+}
+
+.notes-toolbar-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.notes-toolbar-btn.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.notes-toolbar-separator {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+  margin: 0 6px;
+  opacity: 0.4;
+}
+
+/* In-note Search Bar */
+.notes-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.notes-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.notes-search-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.notes-search-count {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Side-by-side Split Editor */
+.notes-split-editor {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.notes-edit-pane {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+  padding-right: 16px;
+}
+
+.notes-preview-pane {
+  overflow-y: auto;
+  padding-left: 4px;
 }
 
 .notes-content-textarea {
   flex: 1;
-  background: transparent; /* No more box inside the editor section */
+  background: transparent;
   border: none;
-  padding: 8px 0; /* Remove side padding so it's flush with the title */
+  padding: 4px 0;
   color: var(--text-primary);
-  font-family: inherit;
-  font-size: 1.15rem; /* slightly larger for readability */
-  line-height: 1.6;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.9rem;
+  line-height: 1.7;
   resize: none;
   outline: none;
+  overflow-y: auto;
+}
+
+/* Search highlight in preview */
+.search-highlight {
+  background: rgba(255, 200, 0, 0.3);
+  color: var(--text-primary);
+  padding: 1px 2px;
 }
 
 /* Markdown Styles inside Preview */
@@ -2283,6 +2419,19 @@ body {
     border-bottom: 1px solid var(--border);
     padding-right: 0;
     padding-bottom: 12px;
+  }
+
+  .notes-split-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .notes-edit-pane {
+    border-right: none;
+    padding-right: 0;
+  }
+
+  .notes-preview-pane {
+    display: none;
   }
 
   .challenges-view {
