@@ -183,6 +183,7 @@ export default function App() {
   const [activePomodoroId, setActivePomodoroId] = useState<string | null>(null);
   const [pomodoroTimeLeft, setPomodoroTimeLeft] = useState(settings.pomodoroDuration * 60);
   const [isPomodoroRunning, setIsPomodoroRunning] = useState(false);
+  const [pomodoroPhase, setPomodoroPhase] = useState<'focus' | 'break' | null>(null);
 
   // UI State
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -248,25 +249,44 @@ export default function App() {
       if (pomodoroTimeLeft > 0) {
         setPomodoroTimeLeft((prev) => prev - 1);
       } else {
-        setIsPomodoroRunning(false);
-        setActivePomodoroId(null);
-        try {
-          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-          audio.volume = 0.5;
-          audio.play();
-        } catch (e) {
-          console.error("Audio play failed: ", e);
+        if (pomodoroPhase === 'focus') {
+          // Focus ended — play sound and auto-start break
+          try {
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.volume = 0.5;
+            audio.play();
+          } catch (e) {
+            console.error("Audio play failed: ", e);
+          }
+          sendNotification({
+            title: 'Focus session complete! 🎉',
+            body: `Break time: ${settings.pomodoroBreakDuration} minutes`,
+          });
+          // Auto-start break
+          setPomodoroPhase('break');
+          setPomodoroTimeLeft(settings.pomodoroBreakDuration * 60);
+          // Keep running — break starts automatically
+        } else {
+          // Break ended
+          try {
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.volume = 0.3;
+            audio.play();
+          } catch (e) {
+            console.error("Audio play failed: ", e);
+          }
+          sendNotification({
+            title: 'Break over! 💪',
+            body: 'Ready for another focus session?',
+          });
+          setIsPomodoroRunning(false);
+          setActivePomodoroId(null);
+          setPomodoroPhase(null);
         }
-
-        // Native notification
-        sendNotification({
-          title: 'Pomodoro Finished! 🎉',
-          body: 'Take a break, you earned it.',
-        });
       }
     }, 1000);
     return () => clearInterval(timer);
-  }, [isPomodoroRunning, pomodoroTimeLeft]);
+  }, [isPomodoroRunning, pomodoroTimeLeft, pomodoroPhase, settings.pomodoroBreakDuration]);
 
   // Global Shortcuts
   useEffect(() => {
@@ -655,15 +675,20 @@ export default function App() {
               <div
                 style={{
                   display: 'flex', alignItems: 'center', gap: '6px',
-                  padding: '3px 10px', background: 'rgba(42,221,132,0.1)',
-                  border: '1px solid rgba(42,221,132,0.3)', borderRadius: '4px',
+                  padding: '3px 10px', 
+                  background: pomodoroPhase === 'break' ? 'rgba(250,173,20,0.1)' : 'rgba(42,221,132,0.1)',
+                  border: `1px solid ${pomodoroPhase === 'break' ? 'rgba(250,173,20,0.3)' : 'rgba(42,221,132,0.3)'}`,
+                  borderRadius: '4px',
                   cursor: 'pointer',
                 }}
                 onClick={() => setIsPomodoroRunning(!isPomodoroRunning)}
                 title={isPomodoroRunning ? 'Click to pause' : 'Click to resume'}
               >
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: isPomodoroRunning ? 'var(--accent)' : 'var(--text-secondary)', boxShadow: isPomodoroRunning ? '0 0 6px var(--accent)' : 'none', animation: isPomodoroRunning ? 'pulse 2s infinite' : 'none' }} />
-                <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent)', letterSpacing: '0.5px' }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: isPomodoroRunning ? (pomodoroPhase === 'break' ? '#faad14' : 'var(--accent)') : 'var(--text-secondary)', boxShadow: isPomodoroRunning ? `0 0 6px ${pomodoroPhase === 'break' ? '#faad14' : 'var(--accent)'}` : 'none', animation: isPomodoroRunning ? 'pulse 2s infinite' : 'none' }} />
+                <span style={{ fontFamily: 'monospace', fontSize: '0.7rem', fontWeight: 600, color: pomodoroPhase === 'break' ? '#faad14' : 'var(--accent)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                  {pomodoroPhase === 'break' ? 'break' : 'focus'}
+                </span>
+                <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 600, color: pomodoroPhase === 'break' ? '#faad14' : 'var(--accent)', letterSpacing: '0.5px' }}>
                   {Math.floor(pomodoroTimeLeft / 60).toString().padStart(2, '0')}:{(pomodoroTimeLeft % 60).toString().padStart(2, '0')}
                 </span>
               </div>
@@ -782,19 +807,40 @@ export default function App() {
 
         <span data-tauri-drag-region style={{ flex: 1 }} />
         {appMode !== 'challenges' && appMode !== 'goals' && appMode !== 'jobs' && appMode !== 'time-canvas' && (
-        <button
-          className="create-btn"
-          onClick={() => {
-            if (appMode === 'notes') {
-              if (activeNoteCategoryId) useStore.getState().addNote(activeNoteCategoryId, 'Untitled Note');
-            } else {
-              setIsAddingTodo(true);
-            }
-          }}
-          disabled={appMode === 'todos' ? !activeCategoryId : appMode === 'bookmarks' ? !activeBookmarkCategoryId : !activeNoteCategoryId}
-        >
-          create <Zap size={16} weight="fill" color="var(--bg-color)" />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {appMode === 'todos' && !activePomodoroId && activeTodos.length > 0 && (
+            <button
+              className="create-btn"
+              style={{ background: 'transparent', boxShadow: '4px 4px 0px var(--text-secondary)', borderColor: 'var(--text-secondary)', color: 'var(--text-secondary)' }}
+              onClick={() => {
+                // Start focus on the first incomplete task
+                const firstIncomplete = activeTodos.find(t => !t.completed);
+                if (firstIncomplete) {
+                  setActivePomodoroId(firstIncomplete.id);
+                  setPomodoroTimeLeft(settings.pomodoroDuration * 60);
+                  setIsPomodoroRunning(true);
+                  setPomodoroPhase('focus');
+                }
+              }}
+              title={`Start ${settings.pomodoroDuration}min focus session`}
+            >
+              <Timer size={16} /> focus
+            </button>
+          )}
+          <button
+            className="create-btn"
+            onClick={() => {
+              if (appMode === 'notes') {
+                if (activeNoteCategoryId) useStore.getState().addNote(activeNoteCategoryId, 'Untitled Note');
+              } else {
+                setIsAddingTodo(true);
+              }
+            }}
+            disabled={appMode === 'todos' ? !activeCategoryId : appMode === 'bookmarks' ? !activeBookmarkCategoryId : !activeNoteCategoryId}
+          >
+            create <Zap size={16} weight="fill" color="var(--bg-color)" />
+          </button>
+        </div>
         )}
       </div>
 
@@ -1216,6 +1262,7 @@ export default function App() {
                           setActivePomodoroId(todo.id);
                           setPomodoroTimeLeft(settings.pomodoroDuration * 60);
                           setIsPomodoroRunning(true);
+                          setPomodoroPhase('focus');
                         }
                       }}
                     >
@@ -1522,9 +1569,9 @@ export default function App() {
               className="pomodoro-floating-player"
             >
               <div className="pomo-info">
-                <div className="pomo-pulse"></div>
+                <div className="pomo-pulse" style={{ background: pomodoroPhase === 'break' ? '#faad14' : 'var(--accent)', boxShadow: `0 0 10px ${pomodoroPhase === 'break' ? '#faad14' : 'var(--accent)'}` }}></div>
                 <span className="pomo-task-name">
-                  {todos.find(t => t.id === activePomodoroId)?.text.replace('!!', '') || 'Focusing...'}
+                  {pomodoroPhase === 'break' ? 'Break Time' : (todos.find(t => t.id === activePomodoroId)?.text.replace('!!', '') || 'Focusing...')}
                 </span>
               </div>
               
@@ -1557,6 +1604,7 @@ export default function App() {
                   onClick={() => {
                     setIsPomodoroRunning(false);
                     setActivePomodoroId(null);
+                    setPomodoroPhase(null);
                   }}
                 >
                   <X size={14} />
