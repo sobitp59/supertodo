@@ -1662,6 +1662,113 @@ body {
   justify-content: center;
 }
 
+/* Challenge day hover actions */
+.challenge-day.hovered {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.challenge-day-actions {
+  display: flex;
+  gap: 2px;
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.challenge-day-btn {
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.6rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+  padding: 0;
+  line-height: 1;
+}
+
+.challenge-day-btn.success {
+  background: rgba(42, 221, 132, 0.2);
+  color: #2add84;
+}
+
+.challenge-day-btn.success:hover,
+.challenge-day-btn.success.active {
+  background: rgba(42, 221, 132, 0.5);
+  color: #fff;
+}
+
+.challenge-day-btn.fail {
+  background: rgba(255, 74, 74, 0.2);
+  color: #ff4a4a;
+}
+
+.challenge-day-btn.fail:hover,
+.challenge-day-btn.fail.active {
+  background: rgba(255, 74, 74, 0.5);
+  color: #fff;
+}
+
+/* Clear button in quick action */
+.challenge-checkin-btn.clear {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.challenge-checkin-btn.clear:hover {
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+.challenge-checkin-btn.active {
+  opacity: 1;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+/* Challenge legend hint */
+.challenge-legend-hint {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  opacity: 0.6;
+  font-style: italic;
+  margin-left: auto;
+}
+
+/* Streak break warning modal */
+.streak-warning-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(2px);
+}
+
+.streak-warning-modal {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 24px;
+  max-width: 340px;
+  width: 90%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 /* Yearly Goals View */
 .goals-view {
   flex: 1;

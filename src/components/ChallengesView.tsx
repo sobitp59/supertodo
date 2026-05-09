@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useStore } from '../store';
-import { Plus, Trash, Trophy, Fire, CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { Plus, Trash, Trophy, Fire, CaretLeft, CaretRight, Warning } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -11,7 +11,7 @@ export function ChallengesView() {
   const activeChallengeId = useStore((state) => state.activeChallengeId);
   const addChallenge = useStore((state) => state.addChallenge);
   const removeChallenge = useStore((state) => state.removeChallenge);
-  const toggleChallengeDay = useStore((state) => state.toggleChallengeDay);
+  const setChallengeDay = useStore((state) => state.setChallengeDay);
   const setActiveChallenge = useStore((state) => state.setActiveChallenge);
   const archiveChallenge = useStore((state) => state.archiveChallenge);
 
@@ -20,6 +20,8 @@ export function ChallengesView() {
   const [newEmoji, setNewEmoji] = useState('🔥');
   const [newTargetDays, setNewTargetDays] = useState(30);
   const [viewMonth, setViewMonth] = useState(new Date());
+  const [hoveredDay, setHoveredDay] = useState<string | null>(null);
+  const [streakWarning, setStreakWarning] = useState<{ date: string; streak: number } | null>(null);
 
   const activeChallenge = challenges.find((c) => c.id === activeChallengeId);
   const activeChallenges = challenges.filter((c) => !c.isArchived);
@@ -46,6 +48,59 @@ export function ChallengesView() {
       setIsCreating(false);
     }
   };
+
+  // Calculate streak ending at a given date (looking backward)
+  const getStreakEndingAt = useCallback((entries: Record<string, 'success' | 'fail'>, beforeDate: string): number => {
+    let streak = 0;
+    const d = new Date(beforeDate);
+    d.setDate(d.getDate() - 1); // start from the day before
+    while (true) {
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (entries[dateStr] === 'success') {
+        streak++;
+        d.setDate(d.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }, []);
+
+  // Handle marking a day - with streak warning for 'fail'
+  const handleMarkDay = useCallback((challengeId: string, date: string, status: 'success' | 'fail') => {
+    if (!activeChallenge) return;
+
+    if (status === 'fail') {
+      // Check if this would break a streak
+      const currentStreak = getStreakEndingAt(activeChallenge.entries, date);
+      // Also check if the day before had a success (meaning we're breaking a streak)
+      if (currentStreak >= 3) {
+        setStreakWarning({ date, streak: currentStreak });
+        return; // Don't mark yet, show warning first
+      }
+    }
+
+    setChallengeDay(challengeId, date, status);
+    setHoveredDay(null);
+    toast.success(status === 'success' ? '✓ Marked as success!' : '✗ Marked as failed', { duration: 1500 });
+  }, [activeChallenge, setChallengeDay, getStreakEndingAt]);
+
+  // Confirm streak break
+  const confirmStreakBreak = useCallback(() => {
+    if (!streakWarning || !activeChallenge) return;
+    setChallengeDay(activeChallenge.id, streakWarning.date, 'fail');
+    setStreakWarning(null);
+    setHoveredDay(null);
+    toast('✗ Marked as failed — streak broken', { duration: 2000 });
+  }, [streakWarning, activeChallenge, setChallengeDay]);
+
+  // Handle right-click to clear a day
+  const handleClearDay = useCallback((e: React.MouseEvent, challengeId: string, date: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setChallengeDay(challengeId, date, null);
+    toast('Day cleared', { duration: 1500 });
+  }, [setChallengeDay]);
 
   // Stats for active challenge
   const getStats = () => {
@@ -79,6 +134,45 @@ export function ChallengesView() {
 
   return (
     <div className="challenges-view">
+      {/* Streak Break Warning Modal */}
+      <AnimatePresence>
+        {streakWarning && (
+          <motion.div
+            className="streak-warning-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setStreakWarning(null)}
+          >
+            <motion.div
+              className="streak-warning-modal"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Warning size={32} weight="fill" style={{ color: '#f59e0b' }} />
+              <h3 style={{ margin: '8px 0 4px', fontSize: '1.1rem' }}>Break your streak?</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0 0 16px' }}>
+                You have a <strong>{streakWarning.streak}-day streak</strong> going. Marking this day as failed will break it.
+              </p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="challenge-action-btn" onClick={() => setStreakWarning(null)}>
+                  keep streak
+                </button>
+                <button
+                  className="challenge-action-btn secondary"
+                  style={{ borderColor: '#ef4444', color: '#ef4444' }}
+                  onClick={confirmStreakBreak}
+                >
+                  mark as failed
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Sidebar: Challenge List */}
       <div className="challenges-sidebar">
         <div className="challenges-sidebar-header">
@@ -193,7 +287,7 @@ export function ChallengesView() {
                   <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 700 }}>{activeChallenge.name}</h2>
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                     started {activeChallenge.startDate}
-                    {activeChallenge.targetDays > 0 && ` · ${activeChallenge.targetDays} day challenge`}
+                    {activeChallenge.targetDays > 0 && ` \u00b7 ${activeChallenge.targetDays} day challenge`}
                   </span>
                 </div>
               </div>
@@ -247,34 +341,46 @@ export function ChallengesView() {
               </div>
             </div>
 
-            {/* Today's Quick Action */}
-            {!activeChallenge.entries[todayStr] && (
-              <motion.div
-                className="challenge-today-action"
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-              >
-                <span style={{ fontSize: '0.9rem' }}>today's check-in:</span>
-                <div style={{ display: 'flex', gap: 8 }}>
+            {/* Today's Quick Action - always shows for today, even if already marked (for corrections) */}
+            <motion.div
+              className="challenge-today-action"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+            >
+              <span style={{ fontSize: '0.9rem' }}>
+                today's check-in:
+                {activeChallenge.entries[todayStr] && (
+                  <span style={{ marginLeft: 8, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    (currently: {activeChallenge.entries[todayStr] === 'success' ? '✓ success' : '✗ failed'})
+                  </span>
+                )}
+              </span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  className={`challenge-checkin-btn success ${activeChallenge.entries[todayStr] === 'success' ? 'active' : ''}`}
+                  onClick={() => setChallengeDay(activeChallenge.id, todayStr, 'success')}
+                >
+                  ✓ success
+                </button>
+                <button
+                  className={`challenge-checkin-btn fail ${activeChallenge.entries[todayStr] === 'fail' ? 'active' : ''}`}
+                  onClick={() => handleMarkDay(activeChallenge.id, todayStr, 'fail')}
+                >
+                  ✗ failed
+                </button>
+                {activeChallenge.entries[todayStr] && (
                   <button
-                    className="challenge-checkin-btn success"
-                    onClick={() => toggleChallengeDay(activeChallenge.id, todayStr)}
-                  >
-                    ✓ success
-                  </button>
-                  <button
-                    className="challenge-checkin-btn fail"
+                    className="challenge-checkin-btn clear"
                     onClick={() => {
-                      // Toggle twice: unset → success → fail
-                      toggleChallengeDay(activeChallenge.id, todayStr);
-                      setTimeout(() => toggleChallengeDay(activeChallenge.id, todayStr), 50);
+                      setChallengeDay(activeChallenge.id, todayStr, null);
+                      toast('Today cleared', { duration: 1500 });
                     }}
                   >
-                    ✗ failed
+                    clear
                   </button>
-                </div>
-              </motion.div>
-            )}
+                )}
+              </div>
+            </motion.div>
 
             {/* Calendar */}
             <div className="challenge-calendar">
@@ -306,20 +412,55 @@ export function ChallengesView() {
                   const isToday = dateStr === todayStr;
                   const isFuture = new Date(dateStr) > today;
                   const isBeforeStart = dateStr < activeChallenge.startDate;
+                  const isDisabled = isFuture || isBeforeStart;
+                  const isHovered = hoveredDay === dateStr && !isDisabled;
 
                   return (
                     <div
                       key={day}
-                      className={`challenge-day ${status || ''} ${isToday ? 'today' : ''} ${isFuture || isBeforeStart ? 'disabled' : ''}`}
-                      onClick={() => {
-                        if (!isFuture && !isBeforeStart) {
-                          toggleChallengeDay(activeChallenge.id, dateStr);
+                      className={`challenge-day ${status || ''} ${isToday ? 'today' : ''} ${isDisabled ? 'disabled' : ''} ${isHovered ? 'hovered' : ''}`}
+                      onMouseEnter={() => !isDisabled && setHoveredDay(dateStr)}
+                      onMouseLeave={() => setHoveredDay(null)}
+                      onContextMenu={(e) => {
+                        if (!isDisabled && status) {
+                          handleClearDay(e, activeChallenge.id, dateStr);
+                        } else {
+                          e.preventDefault();
                         }
                       }}
                     >
                       <span className="challenge-day-number">{day}</span>
-                      {status === 'success' && <span className="challenge-day-mark">✓</span>}
-                      {status === 'fail' && <span className="challenge-day-mark fail">✗</span>}
+                      
+                      {/* Show status mark when not hovered */}
+                      {!isHovered && status === 'success' && <span className="challenge-day-mark">✓</span>}
+                      {!isHovered && status === 'fail' && <span className="challenge-day-mark fail">✗</span>}
+                      
+                      {/* Show explicit ✓/✗ buttons on hover */}
+                      {isHovered && (
+                        <div className="challenge-day-actions">
+                          <button
+                            className={`challenge-day-btn success ${status === 'success' ? 'active' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setChallengeDay(activeChallenge.id, dateStr, 'success');
+                              setHoveredDay(null);
+                            }}
+                            title="Mark as success"
+                          >
+                            ✓
+                          </button>
+                          <button
+                            className={`challenge-day-btn fail ${status === 'fail' ? 'active' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMarkDay(activeChallenge.id, dateStr, 'fail');
+                            }}
+                            title="Mark as failed"
+                          >
+                            ✗
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -336,6 +477,9 @@ export function ChallengesView() {
               </div>
               <div className="challenge-legend-item">
                 <div className="challenge-legend-dot" /> unmarked
+              </div>
+              <div className="challenge-legend-hint">
+                right-click to clear a day
               </div>
             </div>
           </>
