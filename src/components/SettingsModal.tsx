@@ -187,6 +187,21 @@ export function SettingsModal({ isOpen, onClose, onExport, onImport }: SettingsM
                 <div className="toggle-thumb" />
               </div>
             </div>
+
+            <div className="settings-row">
+              <label className="settings-label">
+                Canvas start hour: <strong>{settings.canvasStartHour === 0 ? '12 AM' : settings.canvasStartHour <= 12 ? `${settings.canvasStartHour} AM` : `${settings.canvasStartHour - 12} PM`}</strong>
+              </label>
+              <input
+                type="range"
+                className="slider"
+                min="0"
+                max="23"
+                step="1"
+                value={settings.canvasStartHour ?? 8}
+                onChange={(e) => updateSettings({ canvasStartHour: parseInt(e.target.value) })}
+              />
+            </div>
           </div>
 
           {/* Data Section */}
