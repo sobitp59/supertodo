@@ -213,13 +213,13 @@ function CalendarEvent({ todo, layout, onDragStart, onResizeStart, onEditStart, 
             </span>
           )}
 
-          {/* Action buttons */}
-          <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
+          {/* Action buttons - only visible on hover via CSS class */}
+          <div className="calendar-event-actions" style={{ display: 'flex', gap: '2px', flexShrink: 0, opacity: isEditing ? 1 : 0, transition: 'opacity 0.15s' }}>
             {!isEditing && (
               <button
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => { e.stopPropagation(); onEditStart(todo.id); }}
-                style={{ background: 'transparent', border: 'none', color: 'rgba(0,0,0,0.6)', cursor: 'pointer', padding: 0, display: 'flex' }}
+                style={{ background: 'transparent', border: 'none', color: 'rgba(0,0,0,0.6)', cursor: 'pointer', padding: '2px', display: 'flex' }}
                 title="Edit"
               >
                 <PencilSimple size={12} weight="bold" />
@@ -229,7 +229,7 @@ function CalendarEvent({ todo, layout, onDragStart, onResizeStart, onEditStart, 
               <button
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => { e.stopPropagation(); onEditSave(); }}
-                style={{ background: 'transparent', border: 'none', color: 'rgba(0,0,0,0.6)', cursor: 'pointer', padding: 0, display: 'flex' }}
+                style={{ background: 'transparent', border: 'none', color: 'rgba(0,0,0,0.6)', cursor: 'pointer', padding: '2px', display: 'flex' }}
                 title="Save"
               >
                 <Check size={12} weight="bold" />
@@ -238,7 +238,7 @@ function CalendarEvent({ todo, layout, onDragStart, onResizeStart, onEditStart, 
             <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); updateTodoTime(todo.id, undefined, undefined); }}
-              style={{ background: 'transparent', border: 'none', color: 'rgba(0,0,0,0.6)', cursor: 'pointer', padding: 0, display: 'flex' }}
+              style={{ background: 'transparent', border: 'none', color: 'rgba(0,0,0,0.6)', cursor: 'pointer', padding: '2px', display: 'flex' }}
               title="Remove from Calendar"
             >
               <X size={12} weight="bold" />

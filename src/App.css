@@ -2328,3 +2328,10 @@ body {
   max-width: 100% !important;
   padding: 0 32px;
 }
+
+
+
+/* Calendar event actions - show on hover */
+[data-event="true"]:hover .calendar-event-actions {
+  opacity: 1 !important;
+}
