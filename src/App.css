@@ -20,13 +20,29 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'Space Mono', monospace;
-  background-color: var(--bg-color); /* Connect real background to variable */
+  background-color: var(--bg-color);
   color: var(--text-primary);
   height: 100vh;
   overflow: hidden;
   user-select: none;
-  -webkit-font-smoothing: none; /* Pixelated rendering */
-  text-transform: lowercase; /* Retro terminal vibe */
+}
+
+/* Retro lowercase only on UI chrome — never on user content */
+.mode-btn,
+.tab,
+.create-btn,
+.nav-btn,
+.header-greeting,
+.challenge-stat-label,
+.challenge-day-header,
+.jobs-stat-label,
+.job-status-badge,
+.goal-cat-btn,
+.settings-section-title,
+.challenge-action-btn,
+.goal-add-btn,
+.challenge-item-name {
+  text-transform: lowercase;
 }
 
 /* CRT Scanline background */

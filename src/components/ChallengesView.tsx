@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useStore } from '../store';
 import { Plus, Trash, Trophy, Fire, CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 const EMOJI_OPTIONS = ['🔥', '💪', '🧘', '📚', '🏃', '💧', '🚫', '✨', '🎯', '🧠', '💤', '🥗'];
 
@@ -206,7 +207,20 @@ export function ChallengesView() {
                 </button>
                 <button
                   className="icon-btn"
-                  onClick={() => removeChallenge(activeChallenge.id)}
+                  onClick={() => {
+                    const challengeData = challenges.find(c => c.id === activeChallenge.id);
+                    removeChallenge(activeChallenge.id);
+                    toast('Challenge deleted', {
+                      action: {
+                        label: 'Undo',
+                        onClick: () => {
+                          if (challengeData) {
+                            useStore.setState((s) => ({ challenges: [...s.challenges, challengeData], activeChallengeId: challengeData.id }));
+                          }
+                        },
+                      },
+                    });
+                  }}
                   title="Delete"
                 >
                   <Trash size={18} />
