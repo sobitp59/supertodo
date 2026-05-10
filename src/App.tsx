@@ -715,29 +715,6 @@ export default function App() {
               &#x2212;
             </button>
             <button
-              onClick={async () => {
-                const win = getCurrentWindow();
-                const current = await win.isFullscreen();
-                await win.setFullscreen(!current);
-                setIsFullscreen(!current);
-              }}
-              title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-muted, #888)',
-                cursor: 'pointer',
-                fontSize: 16,
-                lineHeight: 1,
-                padding: '0 6px',
-                borderRadius: 4,
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              {isFullscreen ? <ArrowsIn size={14} /> : <ArrowsOut size={14} />}
-            </button>
-            <button
               onClick={() => getCurrentWindow().hide()}
               title="Hide to tray"
               style={{
@@ -801,7 +778,7 @@ export default function App() {
             className={`mode-btn ${appMode === 'time-canvas' ? 'active' : ''}`}
             onClick={() => setAppMode('time-canvas')}
           >
-            Canvas
+            Planner
           </button>
         </div>
 
