@@ -2997,3 +2997,38 @@ body {
 .kanban-column:nth-child(4) { animation-delay: 0.15s; }
 .kanban-column:nth-child(5) { animation-delay: 0.2s; }
 .kanban-column:nth-child(6) { animation-delay: 0.25s; }
+
+
+/* ===== PLANNER ANALYTICS ===== */
+
+.planner-panel-toggle {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.planner-panel-toggle button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.planner-panel-toggle button:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+}
+
+.planner-panel-toggle button.active {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
