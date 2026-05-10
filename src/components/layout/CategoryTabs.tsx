@@ -27,7 +27,7 @@ export function CategoryTabs() {
   return (
     <div className="tabs-row">
       <AnimatePresence>
-        {(appMode === 'todos' ? categories : bookmarkCategories).map((cat) => {
+        {(appMode === 'todos' ? categories : bookmarkCategories).map((cat, index) => {
           const isActive = appMode === 'todos' ? activeCategoryId === cat.id : activeBookmarkCategoryId === cat.id;
           return (
             <motion.button
@@ -35,6 +35,7 @@ export function CategoryTabs() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ delay: index * 0.05, type: 'spring', stiffness: 300, damping: 24 }}
               className={`tab ${isActive ? 'active' : ''}`}
               onClick={() => {
                 if (appMode === 'todos') setActiveCategory(cat.id);

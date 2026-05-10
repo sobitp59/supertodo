@@ -5,6 +5,7 @@ import { CalendarGrid } from './CalendarGrid';
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { format, parseISO, addDays, subDays, isToday, isTomorrow, isYesterday } from 'date-fns';
 import { CaretLeft, CaretRight, CalendarBlank, FloppyDisk, ListBullets, Clock, Fire, Trash } from '@phosphor-icons/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
 export function TimeCanvasView() {
@@ -204,20 +205,62 @@ export function TimeCanvasView() {
             <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', padding: '8px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <ListBullets size={12} color="var(--text-secondary)" />
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{stats.scheduledCount} blocks</span>
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={stats.scheduledCount}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}
+                  >
+                    {stats.scheduledCount} blocks
+                  </motion.span>
+                </AnimatePresence>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <Clock size={12} color="var(--text-secondary)" />
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{stats.totalScheduledHrs}h scheduled</span>
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={stats.totalScheduledHrs}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}
+                  >
+                    {stats.totalScheduledHrs}h scheduled
+                  </motion.span>
+                </AnimatePresence>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <span style={{ fontSize: '0.7rem', color: 'var(--accent)' }}>{stats.freeHrs}h free</span>
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={stats.freeHrs}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ fontSize: '0.7rem', color: 'var(--accent)' }}
+                  >
+                    {stats.freeHrs}h free
+                  </motion.span>
+                </AnimatePresence>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginLeft: 'auto' }}>
                 <Fire size={12} color={stats.focusPercent >= 50 ? 'var(--accent)' : 'var(--text-secondary)'} />
-                <span style={{ fontSize: '0.7rem', color: stats.focusPercent >= 50 ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: 600 }}>
-                  {stats.focusPercent}% focus
-                </span>
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={stats.focusPercent}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ fontSize: '0.7rem', color: stats.focusPercent >= 50 ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: 600 }}
+                  >
+                    {stats.focusPercent}% focus
+                  </motion.span>
+                </AnimatePresence>
               </div>
             </div>
 

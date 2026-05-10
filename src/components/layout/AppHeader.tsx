@@ -1,6 +1,7 @@
 import { CaretLeft as ChevronLeft, CaretRight as ChevronRight, Gear as Settings } from '@phosphor-icons/react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { isToday } from 'date-fns';
+import { motion } from 'framer-motion';
 import { useStore } from '../../store';
 import { formatDateDisplay } from '../../utils/dateHelpers';
 import { ProgressRing } from '../shared/ProgressRing';
@@ -23,7 +24,12 @@ export function AppHeader({ currentDate, progressPercent, pomodoro, onPrevDay, o
   const { activePomodoroId, pomodoroTimeLeft, isPomodoroRunning, pomodoroPhase, setIsPomodoroRunning } = pomodoro;
 
   return (
-    <header className="header">
+    <motion.header
+      className="header"
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+    >
       {/* Left side: draggable area for moving the window */}
       <div data-tauri-drag-region>
         <span className="header-greeting">{greeting}, {settings.userName}</span>
@@ -68,7 +74,13 @@ export function AppHeader({ currentDate, progressPercent, pomodoro, onPrevDay, o
           >
             <Settings size={18} />
           </button>
-          <ProgressRing radius={16} stroke={3} progress={progressPercent} />
+          <motion.div
+            key={progressPercent}
+            animate={{ scale: [1, 1.12, 1] }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+          >
+            <ProgressRing radius={16} stroke={3} progress={progressPercent} />
+          </motion.div>
           {/* Global Pomodoro indicator in header */}
           {activePomodoroId && (
             <div
@@ -133,6 +145,6 @@ export function AppHeader({ currentDate, progressPercent, pomodoro, onPrevDay, o
           </button>
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 }

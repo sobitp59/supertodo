@@ -1,4 +1,5 @@
 import { Timer, Lightning as Zap } from '@phosphor-icons/react';
+import { motion } from 'framer-motion';
 import { useStore } from '../../store';
 import type { Todo } from '../../store';
 import type { PomodoroState, PomodoroControls } from '../../hooks/usePomodoro';
@@ -16,48 +17,38 @@ export function ModeBar({ activeTodos, pomodoro, setIsAddingTodo }: ModeBarProps
   return (
     <div className="action-row">
       <div className="mode-toggle-wrapper">
-        <button
-          className={`mode-btn ${appMode === 'todos' ? 'active' : ''}`}
-          onClick={() => setAppMode('todos')}
-        >
-          Todos
-        </button>
-        <button
-          className={`mode-btn ${appMode === 'bookmarks' ? 'active' : ''}`}
-          onClick={() => setAppMode('bookmarks')}
-        >
-          Bookmarks
-        </button>
-        <button
-          className={`mode-btn ${appMode === 'notes' ? 'active' : ''}`}
-          onClick={() => setAppMode('notes')}
-        >
-          Notes
-        </button>
-        <button
-          className={`mode-btn ${appMode === 'challenges' ? 'active' : ''}`}
-          onClick={() => setAppMode('challenges')}
-        >
-          Challenges
-        </button>
-        <button
-          className={`mode-btn ${appMode === 'goals' ? 'active' : ''}`}
-          onClick={() => setAppMode('goals')}
-        >
-          Goals
-        </button>
-        <button
-          className={`mode-btn ${appMode === 'jobs' ? 'active' : ''}`}
-          onClick={() => setAppMode('jobs')}
-        >
-          Jobs
-        </button>
-        <button
-          className={`mode-btn ${appMode === 'time-canvas' ? 'active' : ''}`}
-          onClick={() => setAppMode('time-canvas')}
-        >
-          Planner
-        </button>
+        {([
+          { id: 'todos', label: 'Todos' },
+          { id: 'bookmarks', label: 'Bookmarks' },
+          { id: 'notes', label: 'Notes' },
+          { id: 'challenges', label: 'Challenges' },
+          { id: 'goals', label: 'Goals' },
+          { id: 'jobs', label: 'Jobs' },
+          { id: 'time-canvas', label: 'Planner' },
+        ] as const).map((mode) => (
+          <button
+            key={mode.id}
+            className={`mode-btn ${appMode === mode.id ? 'active' : ''}`}
+            onClick={() => setAppMode(mode.id)}
+            style={{ position: 'relative' }}
+          >
+            {appMode === mode.id && (
+              <motion.div
+                layoutId="modeActiveIndicator"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: 16,
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                  zIndex: -1,
+                }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              />
+            )}
+            {mode.label}
+          </button>
+        ))}
       </div>
 
       <span data-tauri-drag-region style={{ flex: 1 }} />
