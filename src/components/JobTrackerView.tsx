@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { useStore } from '../store';
 import type { JobApplication } from '../store';
-import { Plus, Trash, PencilSimple, ArrowSquareOut, Buildings, MapPin, CurrencyDollar } from '@phosphor-icons/react';
+import { Plus, Trash, PencilSimple, ArrowSquareOut, Buildings, MapPin, CurrencyDollar, X } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
 const STATUSES: { value: JobApplication['status']; label: string; color: string }[] = [
-  { value: 'wishlist', label: 'wishlist', color: '#636e72' },
-  { value: 'applied', label: 'applied', color: '#0984e3' },
-  { value: 'interview', label: 'interview', color: '#6c5ce7' },
-  { value: 'offer', label: 'offer', color: '#00b894' },
-  { value: 'accepted', label: 'accepted', color: '#2add84' },
-  { value: 'rejected', label: 'rejected', color: '#d63031' },
+  { value: 'wishlist', label: 'Wishlist', color: '#636e72' },
+  { value: 'applied', label: 'Applied', color: '#0984e3' },
+  { value: 'interview', label: 'Interview', color: '#6c5ce7' },
+  { value: 'offer', label: 'Offer', color: '#00b894' },
+  { value: 'accepted', label: 'Accepted', color: '#2add84' },
+  { value: 'rejected', label: 'Rejected', color: '#d63031' },
 ];
 
 const getStatusColor = (status: JobApplication['status']) =>
@@ -27,16 +27,10 @@ export function JobTrackerView() {
   const [newCompany, setNewCompany] = useState('');
   const [newRole, setNewRole] = useState('');
   const [newStatus, setNewStatus] = useState<JobApplication['status']>('wishlist');
-  const [filterStatus, setFilterStatus] = useState<JobApplication['status'] | 'all'>('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<Partial<JobApplication>>({});
-
-  const filtered = filterStatus === 'all'
-    ? jobApplications
-    : jobApplications.filter((j) => j.status === filterStatus);
-
-  // Sort by most recent first
-  const sorted = [...filtered].sort((a, b) => b.createdAt - a.createdAt);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
 
   const handleCreate = () => {
     if (newCompany.trim() && newRole.trim()) {
@@ -69,38 +63,59 @@ export function JobTrackerView() {
     }
   };
 
-  // Stats
-  const statusCounts = STATUSES.map((s) => ({
-    ...s,
-    count: jobApplications.filter((j) => j.status === s.value).length,
-  }));
+  // Native drag handlers
+  const handleDragStart = (e: React.DragEvent, jobId: string) => {
+    setDraggingId(jobId);
+    e.dataTransfer.setData('text/plain', jobId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setDraggingId(null);
+    setDragOverColumn(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, status: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverColumn(status);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverColumn(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, status: JobApplication['status']) => {
+    e.preventDefault();
+    const jobId = e.dataTransfer.getData('text/plain');
+    if (jobId) {
+      updateJobApplication(jobId, { status });
+      toast.success(`Moved to ${status}`);
+    }
+    setDraggingId(null);
+    setDragOverColumn(null);
+  };
 
   return (
-    <div className="jobs-view">
-      {/* Stats Bar */}
-      <div className="jobs-stats-bar">
-        {statusCounts.map((s) => (
-          <div
-            key={s.value}
-            className={`jobs-stat-chip ${filterStatus === s.value ? 'active' : ''}`}
-            onClick={() => setFilterStatus(filterStatus === s.value ? 'all' : s.value)}
-            style={{
-              borderColor: filterStatus === s.value ? s.color : undefined,
-              background: filterStatus === s.value ? `${s.color}15` : undefined,
-            }}
-          >
-            <span className="jobs-stat-dot" style={{ background: s.color }} />
-            <span className="jobs-stat-label">{s.label}</span>
-            <span className="jobs-stat-count">{s.count}</span>
-          </div>
-        ))}
+    <div className="kanban-view">
+      {/* Top bar */}
+      <div className="kanban-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <h2 style={{ margin: 0, fontSize: '1.1rem' }}>Job Tracker</h2>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+            {jobApplications.length} total
+          </span>
+        </div>
+        <button className="kanban-add-btn" onClick={() => setIsCreating(true)}>
+          <Plus size={14} /> Add
+        </button>
       </div>
 
-      {/* Add Button */}
+      {/* Create Form */}
       <AnimatePresence>
-        {isCreating ? (
+        {isCreating && (
           <motion.div
-            className="job-create-form"
+            className="kanban-create-form"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -109,7 +124,7 @@ export function JobTrackerView() {
               <input
                 autoFocus
                 className="job-input"
-                placeholder="company name"
+                placeholder="Company name"
                 value={newCompany}
                 onChange={(e) => setNewCompany(e.target.value)}
                 onKeyDown={(e) => {
@@ -119,7 +134,7 @@ export function JobTrackerView() {
               />
               <input
                 className="job-input"
-                placeholder="role / position"
+                placeholder="Role / Position"
                 value={newRole}
                 onChange={(e) => setNewRole(e.target.value)}
                 onKeyDown={(e) => {
@@ -127,8 +142,6 @@ export function JobTrackerView() {
                   if (e.key === 'Escape') setIsCreating(false);
                 }}
               />
-            </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <select
                 className="challenge-select"
                 value={newStatus}
@@ -138,185 +151,177 @@ export function JobTrackerView() {
                   <option key={s.value} value={s.value}>{s.label}</option>
                 ))}
               </select>
-              <button className="challenge-action-btn" onClick={handleCreate}>add</button>
-              <button className="challenge-action-btn secondary" onClick={() => setIsCreating(false)}>cancel</button>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <button className="challenge-action-btn" onClick={handleCreate}>Add</button>
+              <button className="challenge-action-btn secondary" onClick={() => setIsCreating(false)}>Cancel</button>
             </div>
           </motion.div>
-        ) : (
-          <button className="goal-add-btn" onClick={() => setIsCreating(true)}>
-            <Plus size={16} /> add application
-          </button>
         )}
       </AnimatePresence>
 
-      {/* Job List */}
-      <div className="jobs-list">
-        {sorted.length === 0 && (
-          <div className="goals-empty">
-            <Buildings size={40} weight="thin" style={{ color: 'var(--text-secondary)', marginBottom: 12 }} />
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-              {filterStatus !== 'all'
-                ? `no ${filterStatus} applications`
-                : 'no applications yet. start tracking your job search!'}
-            </p>
-          </div>
-        )}
+      {/* Kanban Board */}
+      <div className="kanban-board">
+        {STATUSES.map((status) => {
+          const columnJobs = jobApplications
+            .filter((j) => j.status === status.value)
+            .sort((a, b) => b.createdAt - a.createdAt);
 
-        <AnimatePresence>
-          {sorted.map((job) => (
-            <motion.div
-              key={job.id}
-              className="job-card"
-              layout
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, x: -20 }}
+          return (
+            <div
+              key={status.value}
+              className={`kanban-column ${dragOverColumn === status.value ? 'drag-over' : ''}`}
+              onDragOver={(e) => handleDragOver(e, status.value)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, status.value)}
             >
-              {editingId === job.id ? (
-                /* Edit Mode */
-                <div className="job-edit-form">
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                    <input
-                      className="job-input"
-                      value={editFields.company || ''}
-                      onChange={(e) => setEditFields({ ...editFields, company: e.target.value })}
-                      placeholder="company"
-                    />
-                    <input
-                      className="job-input"
-                      value={editFields.role || ''}
-                      onChange={(e) => setEditFields({ ...editFields, role: e.target.value })}
-                      placeholder="role"
-                    />
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                    <select
-                      className="challenge-select"
-                      value={editFields.status}
-                      onChange={(e) => setEditFields({ ...editFields, status: e.target.value as JobApplication['status'] })}
-                    >
-                      {STATUSES.map((s) => (
-                        <option key={s.value} value={s.value}>{s.label}</option>
-                      ))}
-                    </select>
-                    <input
-                      className="job-input"
-                      value={editFields.salary || ''}
-                      onChange={(e) => setEditFields({ ...editFields, salary: e.target.value })}
-                      placeholder="salary"
-                    />
-                    <input
-                      className="job-input"
-                      value={editFields.location || ''}
-                      onChange={(e) => setEditFields({ ...editFields, location: e.target.value })}
-                      placeholder="location"
-                    />
-                  </div>
-                  <input
-                    className="job-input"
-                    value={editFields.url || ''}
-                    onChange={(e) => setEditFields({ ...editFields, url: e.target.value })}
-                    placeholder="job posting url"
-                    style={{ marginBottom: 8 }}
-                  />
-                  <textarea
-                    className="job-notes-input"
-                    value={editFields.notes || ''}
-                    onChange={(e) => setEditFields({ ...editFields, notes: e.target.value })}
-                    placeholder="notes..."
-                  />
-                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                    <button className="challenge-action-btn" onClick={saveEdit}>save</button>
-                    <button className="challenge-action-btn secondary" onClick={() => setEditingId(null)}>cancel</button>
-                  </div>
+              {/* Column header */}
+              <div className="kanban-column-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div className="kanban-column-dot" style={{ background: status.color }} />
+                  <span className="kanban-column-title">{status.label}</span>
                 </div>
-              ) : (
-                /* View Mode */
-                <>
-                  <div className="job-card-header">
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="job-card-company">{job.company}</div>
-                      <div className="job-card-role">{job.role}</div>
-                    </div>
-                    <span
-                      className="job-status-badge"
-                      style={{ background: `${getStatusColor(job.status)}20`, color: getStatusColor(job.status), borderColor: `${getStatusColor(job.status)}40` }}
-                    >
-                      {job.status}
-                    </span>
-                  </div>
+                <span className="kanban-column-count">{columnJobs.length}</span>
+              </div>
 
-                  <div className="job-card-meta">
-                    {job.location && (
-                      <span className="job-meta-item">
-                        <MapPin size={12} /> {job.location}
-                      </span>
-                    )}
-                    {job.salary && (
-                      <span className="job-meta-item">
-                        <CurrencyDollar size={12} /> {job.salary}
-                      </span>
-                    )}
-                    <span className="job-meta-item">
-                      {job.appliedDate}
-                    </span>
-                  </div>
-
-                  {job.notes && (
-                    <div className="job-card-notes">{job.notes}</div>
-                  )}
-
-                  <div className="job-card-actions">
-                    <button className="icon-btn" onClick={() => startEdit(job)} title="Edit">
-                      <PencilSimple size={14} />
-                    </button>
-                    {job.url && (
-                      <button
-                        className="icon-btn"
-                        onClick={() => window.open(job.url, '_blank')}
-                        title="Open URL"
-                      >
-                        <ArrowSquareOut size={14} />
-                      </button>
-                    )}
-                    {/* Status quick-change */}
-                    <select
-                      className="job-quick-status"
-                      value={job.status}
-                      onChange={(e) => updateJobApplication(job.id, { status: e.target.value as JobApplication['status'] })}
+              {/* Column cards */}
+              <div className="kanban-column-cards">
+                <AnimatePresence>
+                  {columnJobs.map((job) => (
+                    <motion.div
+                      key={job.id}
+                      className={`kanban-card ${draggingId === job.id ? 'dragging' : ''}`}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e as any, job.id)}
+                      onDragEnd={handleDragEnd}
+                      layout
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      style={{ borderLeftColor: status.color }}
                     >
-                      {STATUSES.map((s) => (
-                        <option key={s.value} value={s.value}>{s.label}</option>
-                      ))}
-                    </select>
-                    <div style={{ flex: 1 }} />
-                    <button
-                      className="icon-btn"
-                      onClick={() => {
-                        const jobData = jobApplications.find(j => j.id === job.id);
-                        removeJobApplication(job.id);
-                        toast('Application deleted', {
-                          action: {
-                            label: 'Undo',
-                            onClick: () => {
-                              if (jobData) {
-                                useStore.setState((s) => ({ jobApplications: [...s.jobApplications, jobData] }));
-                              }
-                            },
-                          },
-                        });
-                      }}
-                      title="Delete"
-                      style={{ color: 'var(--high-priority)' }}
-                    >
-                      <Trash size={14} />
-                    </button>
+                      {editingId === job.id ? (
+                        /* Edit Mode */
+                        <div className="kanban-card-edit">
+                          <input
+                            className="job-input"
+                            value={editFields.company || ''}
+                            onChange={(e) => setEditFields({ ...editFields, company: e.target.value })}
+                            placeholder="Company"
+                            style={{ marginBottom: 6 }}
+                          />
+                          <input
+                            className="job-input"
+                            value={editFields.role || ''}
+                            onChange={(e) => setEditFields({ ...editFields, role: e.target.value })}
+                            placeholder="Role"
+                            style={{ marginBottom: 6 }}
+                          />
+                          <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                            <input
+                              className="job-input"
+                              value={editFields.salary || ''}
+                              onChange={(e) => setEditFields({ ...editFields, salary: e.target.value })}
+                              placeholder="Salary"
+                              style={{ flex: 1 }}
+                            />
+                            <input
+                              className="job-input"
+                              value={editFields.location || ''}
+                              onChange={(e) => setEditFields({ ...editFields, location: e.target.value })}
+                              placeholder="Location"
+                              style={{ flex: 1 }}
+                            />
+                          </div>
+                          <input
+                            className="job-input"
+                            value={editFields.url || ''}
+                            onChange={(e) => setEditFields({ ...editFields, url: e.target.value })}
+                            placeholder="URL"
+                            style={{ marginBottom: 6 }}
+                          />
+                          <textarea
+                            className="job-notes-input"
+                            value={editFields.notes || ''}
+                            onChange={(e) => setEditFields({ ...editFields, notes: e.target.value })}
+                            placeholder="Notes..."
+                            style={{ minHeight: 40 }}
+                          />
+                          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                            <button className="challenge-action-btn" onClick={saveEdit} style={{ fontSize: '0.7rem', padding: '4px 10px' }}>Save</button>
+                            <button className="challenge-action-btn secondary" onClick={() => setEditingId(null)} style={{ fontSize: '0.7rem', padding: '4px 10px' }}>Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* View Mode */
+                        <>
+                          <div className="kanban-card-company">{job.company}</div>
+                          <div className="kanban-card-role">{job.role}</div>
+
+                          {(job.location || job.salary) && (
+                            <div className="kanban-card-meta">
+                              {job.location && (
+                                <span><MapPin size={10} /> {job.location}</span>
+                              )}
+                              {job.salary && (
+                                <span><CurrencyDollar size={10} /> {job.salary}</span>
+                              )}
+                            </div>
+                          )}
+
+                          {job.notes && (
+                            <div className="kanban-card-notes">{job.notes}</div>
+                          )}
+
+                          <div className="kanban-card-footer">
+                            <span className="kanban-card-date">{job.appliedDate}</span>
+                            <div className="kanban-card-actions">
+                              <button className="icon-btn" onClick={() => startEdit(job)} title="Edit" style={{ padding: 3 }}>
+                                <PencilSimple size={12} />
+                              </button>
+                              {job.url && (
+                                <button className="icon-btn" onClick={() => window.open(job.url, '_blank')} title="Open" style={{ padding: 3 }}>
+                                  <ArrowSquareOut size={12} />
+                                </button>
+                              )}
+                              <button
+                                className="icon-btn"
+                                onClick={() => {
+                                  const jobData = jobApplications.find(j => j.id === job.id);
+                                  removeJobApplication(job.id);
+                                  toast('Deleted', {
+                                    action: {
+                                      label: 'Undo',
+                                      onClick: () => {
+                                        if (jobData) {
+                                          useStore.setState((s) => ({ jobApplications: [...s.jobApplications, jobData] }));
+                                        }
+                                      },
+                                    },
+                                  });
+                                }}
+                                title="Delete"
+                                style={{ padding: 3, color: 'var(--high-priority)' }}
+                              >
+                                <Trash size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+
+                {columnJobs.length === 0 && (
+                  <div className="kanban-column-empty">
+                    No applications
                   </div>
-                </>
-              )}
-            </motion.div>
-          ))}
-        </AnimatePresence>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
