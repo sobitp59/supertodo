@@ -8,6 +8,8 @@ export type EisenhowerQuadrant =
   | 'urgent-not-important' 
   | 'not-urgent-not-important';
 
+export type RecurrenceType = 'none' | 'daily' | 'weekdays' | 'weekly';
+
 export interface Todo {
   id: string;
   categoryId: string;
@@ -22,6 +24,14 @@ export interface Todo {
   eisenhowerQuadrant?: EisenhowerQuadrant;
   startTime?: string;
   endTime?: string;
+  recurrence?: RecurrenceType;
+}
+
+export interface TimeBlockTemplate {
+  id: string;
+  name: string;
+  blocks: { text: string; startTime: string; endTime: string; eisenhowerQuadrant?: EisenhowerQuadrant }[];
+  createdAt: number;
 }
 
 export interface Bookmark {
@@ -207,6 +217,15 @@ interface AppState {
   addJobApplication: (company: string, role: string, status: JobApplication['status']) => void;
   updateJobApplication: (id: string, updates: Partial<Omit<JobApplication, 'id' | 'createdAt'>>) => void;
   removeJobApplication: (id: string) => void;
+
+  // Time Block Templates
+  timeBlockTemplates: TimeBlockTemplate[];
+  saveTimeBlockTemplate: (name: string, date: string) => void;
+  applyTimeBlockTemplate: (templateId: string, date: string) => void;
+  removeTimeBlockTemplate: (id: string) => void;
+
+  // Todo Recurrence
+  updateTodoRecurrence: (id: string, recurrence: RecurrenceType) => void;
 
   // Search & Filtering
   searchQuery: string;
@@ -462,6 +481,58 @@ export const useStore = create<AppState>()(
       removeJobApplication: (id) =>
         set((state) => ({
           jobApplications: state.jobApplications.filter((j) => j.id !== id),
+        })),
+
+      // Time Block Templates
+      timeBlockTemplates: [],
+
+      saveTimeBlockTemplate: (name, date) =>
+        set((state) => {
+          const dayBlocks = state.todos.filter(
+            t => t.date === date && t.startTime && t.categoryId === state.activeCategoryId && !t.parentId
+          );
+          if (dayBlocks.length === 0) return state;
+          const template: TimeBlockTemplate = {
+            id: uuidv4(),
+            name,
+            blocks: dayBlocks.map(t => ({
+              text: t.text,
+              startTime: t.startTime!,
+              endTime: t.endTime || '',
+              eisenhowerQuadrant: t.eisenhowerQuadrant,
+            })),
+            createdAt: Date.now(),
+          };
+          return { timeBlockTemplates: [...state.timeBlockTemplates, template] };
+        }),
+
+      applyTimeBlockTemplate: (templateId, date) =>
+        set((state) => {
+          const template = state.timeBlockTemplates.find(t => t.id === templateId);
+          if (!template || !state.activeCategoryId) return state;
+          const newTodos: Todo[] = template.blocks.map(block => ({
+            id: uuidv4(),
+            categoryId: state.activeCategoryId!,
+            text: block.text,
+            completed: false,
+            date,
+            createdAt: Date.now(),
+            startTime: block.startTime,
+            endTime: block.endTime || undefined,
+            eisenhowerQuadrant: block.eisenhowerQuadrant,
+          }));
+          return { todos: [...state.todos, ...newTodos] };
+        }),
+
+      removeTimeBlockTemplate: (id) =>
+        set((state) => ({
+          timeBlockTemplates: state.timeBlockTemplates.filter(t => t.id !== id),
+        })),
+
+      // Todo Recurrence
+      updateTodoRecurrence: (id, recurrence) =>
+        set((state) => ({
+          todos: state.todos.map(t => t.id === id ? { ...t, recurrence } : t),
         })),
 
       addCategory: (name) =>

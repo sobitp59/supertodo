@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useStore } from '../../store';
-import { format } from 'date-fns';
+import type { RecurrenceType } from '../../store';
+import { format, parseISO, getDay } from 'date-fns';
 import { X, Plus, PencilSimple, Check } from '@phosphor-icons/react';
 import { useDroppable } from '@dnd-kit/core';
 import { QUADRANT_COLORS } from './EisenhowerMatrix';
@@ -343,7 +344,34 @@ export function CalendarGrid() {
   const selectionAnchorRef = useRef<number>(0);
 
   const activeTodos = useMemo(() => {
-    return todos.filter(t => t.date === timeCanvasSelectedDate && t.categoryId === activeCategoryId && !t.parentId && t.startTime);
+    const directTodos = todos.filter(t => t.date === timeCanvasSelectedDate && t.categoryId === activeCategoryId && !t.parentId && t.startTime);
+    
+    // Find recurring todos that match this date
+    const selectedDate = parseISO(timeCanvasSelectedDate);
+    const dayOfWeek = getDay(selectedDate); // 0=Sun, 1=Mon, ... 6=Sat
+    
+    const recurringTodos = todos.filter(t => {
+      if (!t.startTime || !t.recurrence || t.recurrence === 'none') return false;
+      if (t.categoryId !== activeCategoryId || t.parentId) return false;
+      if (t.date === timeCanvasSelectedDate) return false; // already in directTodos
+      if (t.date > timeCanvasSelectedDate) return false; // recurrence starts in the future
+      
+      if (t.recurrence === 'daily') return true;
+      if (t.recurrence === 'weekdays') return dayOfWeek >= 1 && dayOfWeek <= 5;
+      if (t.recurrence === 'weekly') {
+        const originalDay = getDay(parseISO(t.date));
+        return dayOfWeek === originalDay;
+      }
+      return false;
+    }).map(t => ({
+      ...t,
+      id: `${t.id}_recurring_${timeCanvasSelectedDate}`, // virtual ID so it renders uniquely
+      date: timeCanvasSelectedDate,
+      completed: false,
+      _recurringSourceId: t.id, // track the source
+    }));
+    
+    return [...directTodos, ...recurringTodos];
   }, [todos, timeCanvasSelectedDate, activeCategoryId]);
 
   const layouts = useMemo(() => getEventsLayout(activeTodos), [activeTodos]);
