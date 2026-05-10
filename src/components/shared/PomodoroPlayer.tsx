@@ -29,10 +29,14 @@ export function PomodoroPlayer({ pomodoro }: PomodoroPlayerProps) {
           </div>
           
           <div className="pomo-controls">
-            <span className="pomo-time">
+            <motion.span
+              className="pomo-time"
+              animate={isPomodoroRunning ? { opacity: [1, 0.7, 1] } : { opacity: 1 }}
+              transition={isPomodoroRunning ? { duration: 2, repeat: Infinity, ease: 'easeInOut' } : {}}
+            >
               {Math.floor(pomodoroTimeLeft / 60).toString().padStart(2, '0')}:
               {(pomodoroTimeLeft % 60).toString().padStart(2, '0')}
-            </span>
+            </motion.span>
             
             <button 
               className="pomo-btn play-pause"

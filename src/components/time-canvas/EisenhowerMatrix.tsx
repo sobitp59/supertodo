@@ -95,6 +95,7 @@ function QuadrantZone({ id, shortLabel, color, icon, items, position }: {
         transition: 'all 0.25s ease',
         position: 'relative',
         overflow: 'hidden',
+        transform: isOver ? 'scale(1.02)' : 'scale(1)',
       }}
     >
       {/* Quadrant header */}

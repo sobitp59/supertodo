@@ -373,6 +373,10 @@ export function JobTrackerView() {
               onDragOver={(e) => handleDragOver(e, status.value)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, status.value)}
+              style={{
+                transform: dragOverColumn === status.value ? 'scale(1.015)' : 'scale(1)',
+                transition: 'transform 0.2s ease, border-color 0.2s ease, background 0.2s ease',
+              }}
             >
               {/* Column header */}
               <div className="kanban-column-header">
@@ -395,8 +399,13 @@ export function JobTrackerView() {
                       onDragEnd={handleDragEnd}
                       layout
                       initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
+                      animate={{
+                        opacity: 1,
+                        scale: 1,
+                        rotate: draggingId === job.id ? 1.5 : 0,
+                      }}
                       exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                       style={{ borderLeftColor: status.color }}
                     >
                       {editingId === job.id ? (
