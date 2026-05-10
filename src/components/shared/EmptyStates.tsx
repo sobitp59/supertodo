@@ -1,7 +1,7 @@
 import { Sparkle, BookmarkSimple, CheckCircle } from '@phosphor-icons/react';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -9,15 +9,15 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' as const } },
 };
 
-const floatVariants = {
+const floatVariants: Variants = {
   animate: {
     y: [0, -4, 0],
-    transition: { duration: 3, repeat: Infinity, ease: 'easeInOut' },
+    transition: { duration: 3, repeat: Infinity, ease: 'easeInOut' as const },
   },
 };
 

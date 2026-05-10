@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useStore } from '../../store';
 import { format, subDays, parseISO, getDay, startOfWeek, addDays } from 'date-fns';
-import { Fire, TrendUp, ArrowsClockwise, CheckCircle, XCircle, Minus } from '@phosphor-icons/react';
+import { Fire, TrendUp, ArrowsClockwise, CheckCircle, XCircle } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
 
 // Compute adherence for a single day
