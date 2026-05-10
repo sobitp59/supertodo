@@ -1393,6 +1393,9 @@ body {
   margin-bottom: 6px;
   border: 1px solid transparent;
   background: transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.85rem;
 }
 
 .folder-item:hover {
