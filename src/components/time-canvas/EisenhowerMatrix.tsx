@@ -25,7 +25,7 @@ function SortableTodoItem({ id, text, color }: { id: string; text: string; color
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.3 : 1,
     zIndex: isDragging ? 10 : 1,
     position: 'relative' as const,
   };
@@ -37,7 +37,7 @@ function SortableTodoItem({ id, text, color }: { id: string; text: string; color
       {...attributes} 
       {...listeners}
       initial={{ opacity: 0, y: 20, scale: 0.9 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      animate={{ opacity: isDragging ? 0.3 : 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.8 }}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       layout
@@ -54,8 +54,9 @@ function SortableTodoItem({ id, text, color }: { id: string; text: string; color
         alignItems: 'center',
         gap: '8px',
         color: 'var(--text-primary)',
-        transition: 'box-shadow 0.2s, transform 0.15s',
+        transition: 'box-shadow 0.2s, background 0.15s',
         boxShadow: `0 2px 6px ${color}15`,
+        userSelect: 'none',
       }}>
         <div style={{ width: '4px', height: '16px', borderRadius: '2px', background: color, flexShrink: 0 }} />
         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -87,7 +88,8 @@ function QuadrantZone({ id, shortLabel, color, emoji, items, position }: {
         padding: '14px',
         display: 'flex', 
         flexDirection: 'column',
-        minHeight: '140px',
+        minHeight: '180px',
+        height: '100%',
         backgroundColor: isOver ? `${color}08` : 'transparent',
         transition: 'all 0.25s ease',
         position: 'relative',
@@ -186,7 +188,7 @@ export function EisenhowerMatrix() {
       </div>
 
       {/* Axis labels */}
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Urgency label (top) */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>
           <span style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '2px', color: 'var(--text-secondary)', fontWeight: 600 }}>
@@ -195,7 +197,7 @@ export function EisenhowerMatrix() {
         </div>
 
         {/* 2x2 Quadrant Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', position: 'relative' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', position: 'relative', flex: 1, minHeight: '400px' }}>
           {/* Importance label (left side) */}
           <div style={{ 
             position: 'absolute', left: '-24px', top: '50%', transform: 'translateY(-50%) rotate(-90deg)',
