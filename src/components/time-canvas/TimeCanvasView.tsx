@@ -1,8 +1,8 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useStore, EisenhowerQuadrant } from '../../store';
-import { EisenhowerMatrix } from './EisenhowerMatrix';
+import { EisenhowerMatrix, QUADRANT_COLORS } from './EisenhowerMatrix';
 import { CalendarGrid } from './CalendarGrid';
-import { DndContext, DragEndEvent, closestCorners } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { format, parseISO, addDays, subDays, isToday, isTomorrow, isYesterday } from 'date-fns';
 import { CaretLeft, CaretRight, CalendarBlank } from '@phosphor-icons/react';
 
@@ -17,14 +17,30 @@ export function TimeCanvasView() {
   } = useStore();
 
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    })
+  );
 
   const activeTodos = useMemo(() => {
     return todos.filter(t => t.date === timeCanvasSelectedDate && t.categoryId === activeCategoryId && !t.parentId);
   }, [todos, timeCanvasSelectedDate, activeCategoryId]);
 
+  const activeDragTodo = activeDragId ? activeTodos.find(t => t.id === activeDragId) : null;
+
   // No longer auto-fullscreen — user controls this via the window toggle button
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDragId(event.active.id as string);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
+    setActiveDragId(null);
     const { active, over } = event;
     if (!over) return;
 
@@ -77,7 +93,7 @@ export function TimeCanvasView() {
   };
 
   return (
-    <DndContext collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div style={{ display: 'flex', gap: '24px', height: '100%', overflow: 'hidden', padding: '16px' }}>
           <div style={{ flex: '0 0 50%', display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', paddingRight: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -142,6 +158,32 @@ export function TimeCanvasView() {
              <EisenhowerMatrix />
           </div>
         </div>
+
+        {/* Drag Overlay - renders the dragged item following the cursor */}
+        <DragOverlay dropAnimation={{ duration: 200, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
+          {activeDragTodo ? (
+            <div style={{
+              padding: '8px 12px',
+              background: 'var(--surface)',
+              borderRadius: '6px',
+              cursor: 'grabbing',
+              border: `1px solid ${activeDragTodo.eisenhowerQuadrant ? QUADRANT_COLORS[activeDragTodo.eisenhowerQuadrant] || 'var(--accent)' : 'var(--accent)'}`,
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              color: 'var(--text-primary)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.2)',
+              transform: 'scale(1.05)',
+              maxWidth: '280px',
+            }}>
+              <div style={{ width: '4px', height: '16px', borderRadius: '2px', background: activeDragTodo.eisenhowerQuadrant ? QUADRANT_COLORS[activeDragTodo.eisenhowerQuadrant] || 'var(--accent)' : 'var(--accent)', flexShrink: 0 }} />
+              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {activeDragTodo.text.replace('!!', '')}
+              </span>
+            </div>
+          ) : null}
+        </DragOverlay>
     </DndContext>
   );
 }
