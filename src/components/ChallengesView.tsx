@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useStore } from '../store';
-import { Plus, Trash, Trophy, Fire, CaretLeft, CaretRight, Warning } from '@phosphor-icons/react';
+import { Plus, Trash, Trophy, Fire, CaretLeft, CaretRight, Warning, Check, X } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -350,8 +350,8 @@ export function ChallengesView() {
               <span style={{ fontSize: '0.9rem' }}>
                 today's check-in:
                 {activeChallenge.entries[todayStr] && (
-                  <span style={{ marginLeft: 8, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    (currently: {activeChallenge.entries[todayStr] === 'success' ? '✓ success' : '✗ failed'})
+                  <span style={{ marginLeft: 8, fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    (currently: {activeChallenge.entries[todayStr] === 'success' ? <><Check size={14} /> success</> : <><X size={14} /> failed</>})
                   </span>
                 )}
               </span>
@@ -360,13 +360,13 @@ export function ChallengesView() {
                   className={`challenge-checkin-btn success ${activeChallenge.entries[todayStr] === 'success' ? 'active' : ''}`}
                   onClick={() => setChallengeDay(activeChallenge.id, todayStr, 'success')}
                 >
-                  ✓ success
+                  <Check size={14} /> success
                 </button>
                 <button
                   className={`challenge-checkin-btn fail ${activeChallenge.entries[todayStr] === 'fail' ? 'active' : ''}`}
                   onClick={() => handleMarkDay(activeChallenge.id, todayStr, 'fail')}
                 >
-                  ✗ failed
+                  <X size={14} /> failed
                 </button>
                 {activeChallenge.entries[todayStr] && (
                   <button
@@ -432,10 +432,10 @@ export function ChallengesView() {
                       <span className="challenge-day-number">{day}</span>
                       
                       {/* Show status mark when not hovered */}
-                      {!isHovered && status === 'success' && <span className="challenge-day-mark">✓</span>}
-                      {!isHovered && status === 'fail' && <span className="challenge-day-mark fail">✗</span>}
+                      {!isHovered && status === 'success' && <span className="challenge-day-mark"><Check size={14} /></span>}
+                      {!isHovered && status === 'fail' && <span className="challenge-day-mark fail"><X size={14} /></span>}
                       
-                      {/* Show explicit ✓/✗ buttons on hover */}
+                      {/* Show action buttons on hover */}
                       {isHovered && (
                         <div className="challenge-day-actions">
                           <button
@@ -447,7 +447,7 @@ export function ChallengesView() {
                             }}
                             title="Mark as success"
                           >
-                            ✓
+                            <Check size={12} />
                           </button>
                           <button
                             className={`challenge-day-btn fail ${status === 'fail' ? 'active' : ''}`}
@@ -457,7 +457,7 @@ export function ChallengesView() {
                             }}
                             title="Mark as failed"
                           >
-                            ✗
+                            <X size={12} />
                           </button>
                         </div>
                       )}
