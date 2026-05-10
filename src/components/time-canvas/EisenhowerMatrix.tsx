@@ -1,15 +1,16 @@
-import { useMemo } from 'react';
+import { useMemo, ReactNode } from 'react';
 import { useStore, EisenhowerQuadrant } from '../../store';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Fire, CalendarBlank, HandWaving, Trash, Check } from '@phosphor-icons/react';
 
-const QUADRANTS: { id: EisenhowerQuadrant; label: string; shortLabel: string; color: string; emoji: string }[] = [
-  { id: 'urgent-important', label: 'Do First', shortLabel: 'DO', color: '#ff4d4f', emoji: '🔥' },
-  { id: 'not-urgent-important', label: 'Schedule', shortLabel: 'SCHEDULE', color: '#faad14', emoji: '📅' },
-  { id: 'urgent-not-important', label: 'Delegate', shortLabel: 'DELEGATE', color: '#1890ff', emoji: '👋' },
-  { id: 'not-urgent-not-important', label: 'Eliminate', shortLabel: 'ELIMINATE', color: '#8c8c8c', emoji: '🗑️' },
+const QUADRANTS: { id: EisenhowerQuadrant; label: string; shortLabel: string; color: string; icon: ReactNode }[] = [
+  { id: 'urgent-important', label: 'Do First', shortLabel: 'DO', color: '#ff4d4f', icon: <Fire size={14} weight="fill" color="#ff4d4f" /> },
+  { id: 'not-urgent-important', label: 'Schedule', shortLabel: 'SCHEDULE', color: '#faad14', icon: <CalendarBlank size={14} weight="fill" color="#faad14" /> },
+  { id: 'urgent-not-important', label: 'Delegate', shortLabel: 'DELEGATE', color: '#1890ff', icon: <HandWaving size={14} weight="fill" color="#1890ff" /> },
+  { id: 'not-urgent-not-important', label: 'Eliminate', shortLabel: 'ELIMINATE', color: '#8c8c8c', icon: <Trash size={14} weight="fill" color="#8c8c8c" /> },
 ];
 
 export const QUADRANT_COLORS: Record<string, string> = {
@@ -67,8 +68,8 @@ function SortableTodoItem({ id, text, color }: { id: string; text: string; color
   );
 }
 
-function QuadrantZone({ id, shortLabel, color, emoji, items, position }: { 
-  id: string; shortLabel: string; color: string; emoji: string; items: any[]; position: 'tl' | 'tr' | 'bl' | 'br' 
+function QuadrantZone({ id, shortLabel, color, icon, items, position }: { 
+  id: string; shortLabel: string; color: string; icon: ReactNode; items: any[]; position: 'tl' | 'tr' | 'bl' | 'br' 
 }) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
@@ -98,7 +99,7 @@ function QuadrantZone({ id, shortLabel, color, emoji, items, position }: {
     >
       {/* Quadrant header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-        <span style={{ fontSize: '1rem' }}>{emoji}</span>
+        <span style={{ fontSize: '1rem', display: 'flex', alignItems: 'center' }}>{icon}</span>
         <span style={{ fontSize: '0.7rem', fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '1px' }}>{shortLabel}</span>
         <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginLeft: 'auto' }}>{items.length}</span>
       </div>
@@ -159,8 +160,8 @@ function UnclassifiedZone({ items }: { items: any[] }) {
           </AnimatePresence>
         </div>
         {items.length === 0 && (
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', padding: '8px 0', textAlign: 'center' }}>
-            all items classified ✓
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', padding: '8px 0', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+            all items classified <Check size={14} />
           </div>
         )}
       </SortableContext>
@@ -215,7 +216,7 @@ export function EisenhowerMatrix() {
                 id={quad.id}
                 shortLabel={quad.shortLabel}
                 color={quad.color}
-                emoji={quad.emoji}
+                icon={quad.icon}
                 items={quadrantTodos}
                 position={positions[idx]}
               />
