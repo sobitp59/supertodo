@@ -325,6 +325,7 @@ type InteractionMode = 'idle' | 'selecting' | 'dragging' | 'resizing';
 
 export function CalendarGrid() {
   const { todos, timeCanvasSelectedDate, activeCategoryId, addTodo, editTodo } = useStore();
+  const canvasStartHour = useStore((state) => state.settings.canvasStartHour);
   
   const [selection, setSelection] = useState<{ startY: number; endY: number } | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -349,10 +350,10 @@ export function CalendarGrid() {
 
   useEffect(() => {
     if (scrollRef.current) {
-      const startHour = useStore.getState().settings.canvasStartHour ?? 8;
+      const startHour = canvasStartHour ?? 8;
       scrollRef.current.scrollTop = startHour * HOUR_HEIGHT - 20;
     }
-  }, [timeCanvasSelectedDate]);
+  }, [timeCanvasSelectedDate, canvasStartHour]);
 
   const getRelativeY = useCallback((clientY: number): number => {
     if (!containerRef.current) return 0;
