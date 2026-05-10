@@ -1,10 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
 import { useStore, EisenhowerQuadrant } from '../../store';
 import { EisenhowerMatrix, QUADRANT_COLORS } from './EisenhowerMatrix';
+import { PlannerAnalytics } from './PlannerAnalytics';
 import { CalendarGrid } from './CalendarGrid';
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { format, parseISO, addDays, subDays, isToday, isTomorrow, isYesterday } from 'date-fns';
-import { CaretLeft, CaretRight, CalendarBlank, FloppyDisk, ListBullets, Clock, Fire, Trash } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, CalendarBlank, FloppyDisk, ListBullets, Clock, Fire, Trash, ChartBar, GridFour } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -27,6 +28,7 @@ export function TimeCanvasView() {
   const [showTemplateMenu, setShowTemplateMenu] = useState(false);
   const [newTemplateName, setNewTemplateName] = useState('');
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [rightPanel, setRightPanel] = useState<'matrix' | 'analytics'>('matrix');
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -334,8 +336,23 @@ export function TimeCanvasView() {
             <CalendarGrid />
           </div>
           
-          <div style={{ flex: '1', minWidth: 0 }}>
-             <EisenhowerMatrix />
+          <div style={{ flex: '1', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            {/* Panel toggle */}
+            <div className="planner-panel-toggle">
+              <button
+                className={rightPanel === 'matrix' ? 'active' : ''}
+                onClick={() => setRightPanel('matrix')}
+              >
+                <GridFour size={12} /> Matrix
+              </button>
+              <button
+                className={rightPanel === 'analytics' ? 'active' : ''}
+                onClick={() => setRightPanel('analytics')}
+              >
+                <ChartBar size={12} /> Analytics
+              </button>
+            </div>
+            {rightPanel === 'matrix' ? <EisenhowerMatrix /> : <PlannerAnalytics />}
           </div>
         </div>
 
