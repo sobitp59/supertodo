@@ -189,18 +189,24 @@ export function SettingsModal({ isOpen, onClose, onExport, onImport }: SettingsM
             </div>
 
             <div className="settings-row">
-              <label className="settings-label">
-                Canvas start hour: <strong>{settings.canvasStartHour === 0 ? '12 AM' : settings.canvasStartHour <= 12 ? `${settings.canvasStartHour} AM` : `${settings.canvasStartHour - 12} PM`}</strong>
-              </label>
-              <input
-                type="range"
-                className="slider"
-                min="0"
-                max="23"
-                step="1"
+              <label className="settings-label">Planner start time</label>
+              <select
                 value={settings.canvasStartHour ?? 8}
                 onChange={(e) => updateSettings({ canvasStartHour: parseInt(e.target.value) })}
-              />
+                style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  padding: '8px 12px',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer',
+                }}
+              >
+                {Array.from({ length: 24 }, (_, i) => {
+                  const label = i === 0 ? '12:00 AM' : i < 12 ? `${i}:00 AM` : i === 12 ? '12:00 PM' : `${i - 12}:00 PM`;
+                  return <option key={i} value={i}>{label}</option>;
+                })}
+              </select>
             </div>
           </div>
 

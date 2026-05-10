@@ -689,9 +689,9 @@ body {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  padding: 10px 20px;
+  padding: 8px 12px;
   border-radius: 16px;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
