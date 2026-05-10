@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useStore } from '../../store';
 import type { RecurrenceType } from '../../store';
 import { format, parseISO, getDay } from 'date-fns';
-import { X, Plus, PencilSimple, Check } from '@phosphor-icons/react';
+import { X, Plus, PencilSimple, Check, Bell, BellRinging } from '@phosphor-icons/react';
 import { useDroppable } from '@dnd-kit/core';
 import { QUADRANT_COLORS } from './EisenhowerMatrix';
 
@@ -109,9 +109,11 @@ interface CalendarEventProps {
 }
 
 function CalendarEvent({ todo, layout, onDragStart, onResizeStart, onEditStart, isDragging, isResizing, isEditing, dragOffset, resizeHeight, editText, onEditChange, onEditSave, onEditCancel }: CalendarEventProps) {
-  const { updateTodoTime } = useStore();
+  const { updateTodoTime, updateTodoReminder } = useStore();
+  const [showReminderMenu, setShowReminderMenu] = useState(false);
   const color = getEventColor(todo.eisenhowerQuadrant);
   const quadrantLabel = todo.eisenhowerQuadrant ? QUADRANT_LABELS[todo.eisenhowerQuadrant] : null;
+  const hasReminder = todo.reminderMinutes !== undefined && todo.reminderMinutes !== null;
 
   const startMins = parseTime(todo.startTime);
   const endMins = parseTime(todo.endTime) || (startMins + 60);
@@ -215,7 +217,63 @@ function CalendarEvent({ todo, layout, onDragStart, onResizeStart, onEditStart, 
           )}
 
           {/* Action buttons */}
-          <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: '2px', flexShrink: 0, position: 'relative' }}>
+            {/* Reminder bell */}
+            {!isEditing && (
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); setShowReminderMenu(!showReminderMenu); }}
+                style={{ background: 'transparent', border: 'none', color: hasReminder ? '#fff' : 'rgba(0,0,0,0.6)', cursor: 'pointer', padding: 0, display: 'flex' }}
+                title={hasReminder ? `Reminder: ${todo.reminderMinutes} min before` : 'Set reminder'}
+              >
+                {hasReminder ? <BellRinging size={12} weight="fill" /> : <Bell size={12} weight="bold" />}
+              </button>
+            )}
+            {/* Reminder dropdown */}
+            {showReminderMenu && (
+              <div
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  position: 'absolute', top: '100%', right: 0, marginTop: '4px',
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  zIndex: 200, minWidth: '120px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                  padding: '4px 0',
+                }}
+              >
+                {[
+                  { label: 'None', value: undefined },
+                  { label: 'At start', value: 0 },
+                  { label: '5 min before', value: 5 },
+                  { label: '10 min before', value: 10 },
+                  { label: '15 min before', value: 15 },
+                  { label: '30 min before', value: 30 },
+                  { label: '1 hr before', value: 60 },
+                ].map(opt => (
+                  <div
+                    key={opt.label}
+                    onClick={() => {
+                      // Use the real todo ID (not the virtual recurring one)
+                      const realId = (todo as any)._recurringSourceId || todo.id;
+                      updateTodoReminder(realId, opt.value);
+                      setShowReminderMenu(false);
+                    }}
+                    style={{
+                      padding: '6px 12px', fontSize: '0.7rem', cursor: 'pointer',
+                      color: todo.reminderMinutes === opt.value ? 'var(--accent)' : 'var(--text-primary)',
+                      fontWeight: todo.reminderMinutes === opt.value ? 700 : 400,
+                      background: todo.reminderMinutes === opt.value ? 'rgba(255,255,255,0.05)' : 'transparent',
+                      transition: 'background 0.1s',
+                      fontFamily: 'inherit',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = todo.reminderMinutes === opt.value ? 'rgba(255,255,255,0.05)' : 'transparent')}
+                  >
+                    {opt.label}
+                  </div>
+                ))}
+              </div>
+            )}
             {!isEditing && (
               <button
                 onPointerDown={(e) => e.stopPropagation()}

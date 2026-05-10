@@ -26,6 +26,7 @@ import { usePomodoro } from './hooks/usePomodoro';
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
 import { useWindowControls } from './hooks/useWindowControls';
 import { useConfetti } from './hooks/useConfetti';
+import { useReminders } from './hooks/useReminders';
 import './App.css';
 
 export default function App() {
@@ -62,6 +63,8 @@ export default function App() {
     setIsFullscreen,
     setContextMenu,
   });
+
+  useReminders();
 
   // Dynamic Accent Color
   useEffect(() => {
