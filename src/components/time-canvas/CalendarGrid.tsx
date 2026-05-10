@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useStore } from '../../store';
-import type { RecurrenceType } from '../../store';
+
 import { format, parseISO, getDay } from 'date-fns';
 import { X, Plus, PencilSimple, Check, Bell, BellRinging } from '@phosphor-icons/react';
 import { useDroppable } from '@dnd-kit/core';

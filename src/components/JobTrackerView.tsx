@@ -14,8 +14,7 @@ const STATUSES: { value: JobApplication['status']; label: string; color: string 
   { value: 'rejected', label: 'Rejected', color: '#d63031' },
 ];
 
-const getStatusColor = (status: JobApplication['status']) =>
-  STATUSES.find((s) => s.value === status)?.color || '#636e72';
+
 
 // Extract company name from common job platform URLs
 function extractCompanyFromUrl(url: string): string | null {
