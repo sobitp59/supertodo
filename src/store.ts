@@ -25,6 +25,8 @@ export interface Todo {
   startTime?: string;
   endTime?: string;
   recurrence?: RecurrenceType;
+  reminderMinutes?: number; // minutes before startTime to fire notification (0=at start, 5, 10, 15, 30, 60)
+  reminderFired?: string; // date string when reminder was last fired (prevents duplicate per day)
 }
 
 export interface TimeBlockTemplate {
@@ -226,6 +228,10 @@ interface AppState {
 
   // Todo Recurrence
   updateTodoRecurrence: (id: string, recurrence: RecurrenceType) => void;
+
+  // Todo Reminders
+  updateTodoReminder: (id: string, reminderMinutes: number | undefined) => void;
+  markReminderFired: (id: string, date: string) => void;
 
   // Search & Filtering
   searchQuery: string;
@@ -533,6 +539,17 @@ export const useStore = create<AppState>()(
       updateTodoRecurrence: (id, recurrence) =>
         set((state) => ({
           todos: state.todos.map(t => t.id === id ? { ...t, recurrence } : t),
+        })),
+
+      // Todo Reminders
+      updateTodoReminder: (id, reminderMinutes) =>
+        set((state) => ({
+          todos: state.todos.map(t => t.id === id ? { ...t, reminderMinutes, reminderFired: undefined } : t),
+        })),
+
+      markReminderFired: (id, date) =>
+        set((state) => ({
+          todos: state.todos.map(t => t.id === id ? { ...t, reminderFired: date } : t),
         })),
 
       addCategory: (name) =>
