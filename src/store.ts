@@ -52,6 +52,13 @@ export interface Category {
   createdAt: number;
 }
 
+export interface AISettings {
+  provider: 'none' | 'ollama' | 'openai' | 'groq' | 'anthropic' | 'custom';
+  model: string;
+  apiKey?: string;
+  baseUrl?: string; // custom endpoint URL
+}
+
 export interface AppSettings {
   pomodoroDuration: number; // in minutes, default 25
   pomodoroBreakDuration: number; // in minutes, default 5
@@ -62,6 +69,7 @@ export interface AppSettings {
   theme: 'dark' | 'light';
   userName: string;
   canvasStartHour: number; // hour to auto-scroll to in Canvas view, default 8
+  ai: AISettings;
 }
 
 export interface Note {
@@ -303,6 +311,7 @@ export const useStore = create<AppState>()(
         theme: 'dark',
         userName: 'User',
         canvasStartHour: 8,
+        ai: { provider: 'none', model: '' },
       },
       updateSettings: (partial) =>
         set((state) => ({
