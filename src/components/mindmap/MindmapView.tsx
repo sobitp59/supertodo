@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Trash, TreeStructure, PencilSimple, X, MagnifyingGlass } from '@phosphor-icons/react';
+import { Plus, Trash, TreeStructure, PencilSimple, X, MagnifyingGlass, Sparkle } from '@phosphor-icons/react';
 import { useStore } from '../../store';
 import { MindmapCanvas } from './MindmapCanvas';
+import { useAI } from '../../hooks/useAI';
 
 export function MindmapView() {
   const { mindmaps, activeMindmapId, addMindmap, removeMindmap, setActiveMindmap, updateMindmapTitle, updateMindmapNode } = useStore();
@@ -14,6 +15,7 @@ export function MindmapView() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [nodeNotes, setNodeNotes] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const ai = useAI();
 
   const activeMindmap = mindmaps.find(m => m.id === activeMindmapId);
   const selectedNode = activeMindmap?.nodes.find(n => n.id === selectedNodeId);
@@ -142,12 +144,27 @@ export function MindmapView() {
         )}
 
         {activeMindmap ? (
-          <MindmapCanvas
-            mindmap={activeMindmap}
-            searchTerm={searchTerm}
-            onSearchToggle={handleSearchToggle}
-            onSelectNodeForPanel={setSelectedNodeId}
-          />
+          <>
+            {/* Auto-generate prompt for new mindmaps with only root node */}
+            {activeMindmap.nodes.length <= 1 && !ai.isGenerating && (
+              <div className="mindmap-autogenerate-hint">
+                <button className="mindmap-ai-btn mindmap-ai-btn-large" onClick={() => ai.autoGenerateMindmap(activeMindmap.id)}>
+                  <Sparkle size={14} weight="fill" /> Auto-generate from title
+                </button>
+              </div>
+            )}
+            {ai.isGenerating && activeMindmap.nodes.length <= 1 && (
+              <div className="mindmap-autogenerate-hint">
+                <span className="mindmap-ai-loading">Generating mindmap structure...</span>
+              </div>
+            )}
+            <MindmapCanvas
+              mindmap={activeMindmap}
+              searchTerm={searchTerm}
+              onSearchToggle={handleSearchToggle}
+              onSelectNodeForPanel={setSelectedNodeId}
+            />
+          </>
         ) : (
           <div className="mindmap-empty-state">
             <TreeStructure size={64} weight="thin" />
@@ -169,6 +186,46 @@ export function MindmapView() {
               <X size={14} />
             </button>
           </div>
+
+          {/* AI Actions */}
+          <div className="mindmap-ai-actions">
+            <button
+              className="mindmap-ai-btn"
+              disabled={ai.isGenerating}
+              onClick={() => ai.generateChildren(activeMindmap.id, selectedNodeId!)}
+              title="Generate child ideas with AI"
+            >
+              <Sparkle size={12} weight="fill" /> {ai.isGenerating ? 'Thinking...' : 'Generate Ideas'}
+            </button>
+            <button
+              className="mindmap-ai-btn"
+              disabled={ai.isGenerating}
+              onClick={() => ai.expandNode(activeMindmap.id, selectedNodeId!)}
+              title="Expand with more detail"
+            >
+              <Plus size={12} /> Expand
+            </button>
+            {activeMindmap.nodes.filter(n => n.parentId === selectedNodeId).length > 0 && (
+              <button
+                className="mindmap-ai-btn"
+                disabled={ai.isGenerating}
+                onClick={async () => {
+                  const summary = await ai.summarizeBranch(activeMindmap.id, selectedNodeId!);
+                  if (summary) updateMindmapNode(activeMindmap.id, selectedNodeId!, { text: summary });
+                }}
+                title="Summarize children into this node"
+              >
+                Summarize
+              </button>
+            )}
+          </div>
+
+          {ai.error && (
+            <div className="mindmap-ai-error" onClick={ai.clearError}>
+              {ai.error}
+            </div>
+          )}
+
           <textarea
             className="mindmap-notes-textarea"
             placeholder="Add notes for this node (markdown supported)..."

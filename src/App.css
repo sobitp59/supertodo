@@ -3676,3 +3676,98 @@ body {
 .mindmap-notes-textarea::placeholder {
   color: var(--text-secondary);
 }
+
+
+
+/* ===== MINDMAP AI STYLES ===== */
+
+.mindmap-ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mindmap-ai-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.mindmap-ai-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.mindmap-ai-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mindmap-ai-btn-large {
+  padding: 8px 16px;
+  font-size: 11px;
+  box-shadow: 3px 3px 0px rgba(255, 255, 255, 0.1);
+}
+
+.mindmap-ai-btn-large:hover:not(:disabled) {
+  box-shadow: 2px 2px 0px var(--accent);
+  transform: translate(1px, 1px);
+}
+
+.mindmap-ai-error {
+  padding: 6px 12px;
+  background: rgba(255, 107, 107, 0.1);
+  border-bottom: 1px solid rgba(255, 107, 107, 0.3);
+  font-size: 10px;
+  color: #ff6b6b;
+  cursor: pointer;
+}
+
+.mindmap-ai-error:hover {
+  background: rgba(255, 107, 107, 0.15);
+}
+
+.mindmap-autogenerate-hint {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mindmap-ai-loading {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  animation: pulse 1.5s infinite;
+}
+
+/* Spinning animation for loading indicators */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
