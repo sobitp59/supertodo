@@ -289,6 +289,28 @@ interface AppState {
   isZenMode: boolean;
   zenModeTaskId: string | null;
   setZenMode: (isZen: boolean, taskId?: string) => void;
+
+  // Chat
+  chatHistory: ChatMessage[];
+  chatOpen: boolean;
+  toggleChat: () => void;
+  addChatMessage: (message: ChatMessage) => void;
+  clearChatHistory: () => void;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  actions?: ChatAction[];
+  timestamp: number;
+}
+
+export interface ChatAction {
+  action: string;
+  params: Record<string, any>;
+  success?: boolean;
+  resultText?: string;
 }
 
 export const useStore = create<AppState>()(
@@ -353,6 +375,15 @@ export const useStore = create<AppState>()(
       isZenMode: false,
       zenModeTaskId: null,
       setZenMode: (isZen, taskId) => set({ isZenMode: isZen, zenModeTaskId: taskId || null }),
+
+      // Chat
+      chatHistory: [],
+      chatOpen: false,
+      toggleChat: () => set((state) => ({ chatOpen: !state.chatOpen })),
+      addChatMessage: (message) => set((state) => ({
+        chatHistory: [...state.chatHistory.slice(-49), message], // Keep last 50
+      })),
+      clearChatHistory: () => set({ chatHistory: [] }),
 
       // Challenges
       challenges: [],
@@ -1076,7 +1107,7 @@ export const useStore = create<AppState>()(
       // Don't persist transient UI state — only persist actual data
       partialize: (state) => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { searchQuery, searchResults, isSearchOpen, isZenMode, zenModeTaskId, ...persisted } = state;
+        const { searchQuery, searchResults, isSearchOpen, isZenMode, zenModeTaskId, chatOpen, ...persisted } = state;
         return persisted;
       },
       // Custom storage wrapper with error handling to prevent silent data loss

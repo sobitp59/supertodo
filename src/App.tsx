@@ -16,6 +16,7 @@ import { JobTrackerView } from './components/JobTrackerView';
 import { ContextMenu, ContextMenuItem } from './components/ContextMenu';
 import { TimeCanvasView } from './components/time-canvas/TimeCanvasView';
 import { MindmapView } from './components/mindmap/MindmapView';
+import { ChatPanel } from './components/chat/ChatPanel';
 import { AppHeader } from './components/layout/AppHeader';
 import { ModeBar } from './components/layout/ModeBar';
 import { CategoryTabs } from './components/layout/CategoryTabs';
@@ -242,8 +243,22 @@ export default function App() {
       <Omnibar isOpen={isSearchOpen} onClose={() => setSearchOpen(false)} />
       {isZenMode && zenModeTaskId && <ZenMode todoId={zenModeTaskId} onExit={() => setZenMode(false)} />}
       {contextMenu && <ContextMenu x={contextMenu.x} y={contextMenu.y} items={contextMenu.items} onClose={() => setContextMenu(null)} />}
+      <ChatPanel />
+      <ChatToggleButton />
     </div>
     </>
+  );
+}
+
+function ChatToggleButton() {
+  const { chatOpen, toggleChat } = useStore();
+  if (chatOpen) return null;
+  return (
+    <button className="chat-toggle-btn" onClick={toggleChat} title="Open AI Chat">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+    </button>
   );
 }
 
