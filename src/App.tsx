@@ -15,6 +15,7 @@ import { YearlyGoalsView } from './components/YearlyGoalsView';
 import { JobTrackerView } from './components/JobTrackerView';
 import { ContextMenu, ContextMenuItem } from './components/ContextMenu';
 import { TimeCanvasView } from './components/time-canvas/TimeCanvasView';
+import { MindmapView } from './components/mindmap/MindmapView';
 import { AppHeader } from './components/layout/AppHeader';
 import { ModeBar } from './components/layout/ModeBar';
 import { CategoryTabs } from './components/layout/CategoryTabs';
@@ -179,7 +180,7 @@ export default function App() {
 
       <ModeBar activeTodos={activeTodos} pomodoro={pomodoro} setIsAddingTodo={setIsAddingTodo} />
 
-      {appMode !== 'notes' && appMode !== 'challenges' && appMode !== 'goals' && appMode !== 'jobs' && appMode !== 'time-canvas' && (
+      {appMode !== 'notes' && appMode !== 'challenges' && appMode !== 'goals' && appMode !== 'jobs' && appMode !== 'time-canvas' && appMode !== 'mindmap' && (
         <CategoryTabs />
       )}
 
@@ -193,6 +194,8 @@ export default function App() {
         <JobTrackerView />
       ) : appMode === 'time-canvas' ? (
         <TimeCanvasView />
+      ) : appMode === 'mindmap' ? (
+        <MindmapView />
       ) : (
         <>
           {activeHashtagFilter && (appMode === 'todos' || appMode === 'bookmarks') && (
