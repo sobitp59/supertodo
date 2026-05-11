@@ -123,6 +123,29 @@ export interface JobApplication {
   createdAt: number;
 }
 
+export interface MindmapNode {
+  id: string;
+  mindmapId: string;
+  text: string;
+  parentId: string | null; // null = root/center node
+  position: { x: number; y: number };
+  color?: string;
+  collapsed?: boolean;
+  notes?: string; // optional markdown content
+  shape?: 'rectangle' | 'rounded' | 'ellipse' | 'pill';
+}
+
+export interface Mindmap {
+  id: string;
+  title: string;
+  rootNodeId: string;
+  nodes: MindmapNode[];
+  zoom: number;
+  panOffset: { x: number; y: number };
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface SearchResult {
   type: 'todo' | 'bookmark' | 'note';
   id: string;
@@ -134,8 +157,8 @@ export interface SearchResult {
 
 interface AppState {
   // App mode
-  appMode: 'todos' | 'bookmarks' | 'notes' | 'challenges' | 'goals' | 'jobs' | 'time-canvas';
-  setAppMode: (mode: 'todos' | 'bookmarks' | 'notes' | 'challenges' | 'goals' | 'jobs' | 'time-canvas') => void;
+  appMode: 'todos' | 'bookmarks' | 'notes' | 'challenges' | 'goals' | 'jobs' | 'time-canvas' | 'mindmap';
+  setAppMode: (mode: 'todos' | 'bookmarks' | 'notes' | 'challenges' | 'goals' | 'jobs' | 'time-canvas' | 'mindmap') => void;
 
   // Time Canvas
   timeCanvasSelectedDate: string; // YYYY-MM-DD
@@ -225,6 +248,17 @@ interface AppState {
   saveTimeBlockTemplate: (name: string, date: string) => void;
   applyTimeBlockTemplate: (templateId: string, date: string) => void;
   removeTimeBlockTemplate: (id: string) => void;
+
+  // Mindmaps
+  mindmaps: Mindmap[];
+  activeMindmapId: string | null;
+  addMindmap: (title: string) => void;
+  removeMindmap: (id: string) => void;
+  setActiveMindmap: (id: string | null) => void;
+  updateMindmapTitle: (id: string, title: string) => void;
+  addMindmapNode: (mindmapId: string, text: string, parentId: string | null, position?: { x: number; y: number }) => void;
+  updateMindmapNode: (mindmapId: string, nodeId: string, updates: Partial<MindmapNode>) => void;
+  removeMindmapNode: (mindmapId: string, nodeId: string) => void;
 
   // Todo Recurrence
   updateTodoRecurrence: (id: string, recurrence: RecurrenceType) => void;
@@ -533,6 +567,97 @@ export const useStore = create<AppState>()(
       removeTimeBlockTemplate: (id) =>
         set((state) => ({
           timeBlockTemplates: state.timeBlockTemplates.filter(t => t.id !== id),
+        })),
+
+      // Mindmaps
+      mindmaps: [],
+      activeMindmapId: null,
+
+      addMindmap: (title) =>
+        set((state) => {
+          const rootNode: MindmapNode = {
+            id: uuidv4(),
+            mindmapId: '', // will be set below
+            text: title,
+            parentId: null,
+            position: { x: 400, y: 300 },
+          };
+          const newMindmap: Mindmap = {
+            id: uuidv4(),
+            title,
+            rootNodeId: rootNode.id,
+            nodes: [{ ...rootNode, mindmapId: '' }],
+            zoom: 1,
+            panOffset: { x: 0, y: 0 },
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          };
+          // Set mindmapId on root node
+          newMindmap.nodes[0].mindmapId = newMindmap.id;
+          return {
+            mindmaps: [...state.mindmaps, newMindmap],
+            activeMindmapId: newMindmap.id,
+          };
+        }),
+
+      removeMindmap: (id) =>
+        set((state) => ({
+          mindmaps: state.mindmaps.filter((m) => m.id !== id),
+          activeMindmapId: state.activeMindmapId === id ? null : state.activeMindmapId,
+        })),
+
+      setActiveMindmap: (id) => set({ activeMindmapId: id }),
+
+      updateMindmapTitle: (id, title) =>
+        set((state) => ({
+          mindmaps: state.mindmaps.map((m) =>
+            m.id === id ? { ...m, title, updatedAt: Date.now() } : m,
+          ),
+        })),
+
+      addMindmapNode: (mindmapId, text, parentId, position) =>
+        set((state) => ({
+          mindmaps: state.mindmaps.map((m) => {
+            if (m.id !== mindmapId) return m;
+            const newNode: MindmapNode = {
+              id: uuidv4(),
+              mindmapId,
+              text,
+              parentId,
+              position: position || { x: 0, y: 0 },
+            };
+            return { ...m, nodes: [...m.nodes, newNode], updatedAt: Date.now() };
+          }),
+        })),
+
+      updateMindmapNode: (mindmapId, nodeId, updates) =>
+        set((state) => ({
+          mindmaps: state.mindmaps.map((m) => {
+            if (m.id !== mindmapId) return m;
+            return {
+              ...m,
+              nodes: m.nodes.map((n) => (n.id === nodeId ? { ...n, ...updates } : n)),
+              updatedAt: Date.now(),
+            };
+          }),
+        })),
+
+      removeMindmapNode: (mindmapId, nodeId) =>
+        set((state) => ({
+          mindmaps: state.mindmaps.map((m) => {
+            if (m.id !== mindmapId) return m;
+            // Recursively remove node and all descendants
+            const getDescendantIds = (id: string): string[] => {
+              const children = m.nodes.filter((n) => n.parentId === id);
+              return [...children.map((c) => c.id), ...children.flatMap((c) => getDescendantIds(c.id))];
+            };
+            const idsToRemove = [nodeId, ...getDescendantIds(nodeId)];
+            return {
+              ...m,
+              nodes: m.nodes.filter((n) => !idsToRemove.includes(n.id)),
+              updatedAt: Date.now(),
+            };
+          }),
         })),
 
       // Todo Recurrence

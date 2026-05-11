@@ -21,6 +21,7 @@ export function ModeBar({ activeTodos, pomodoro, setIsAddingTodo }: ModeBarProps
           { id: 'todos', label: 'Todos' },
           { id: 'bookmarks', label: 'Bookmarks' },
           { id: 'notes', label: 'Notes' },
+          { id: 'mindmap', label: 'Mindmap' },
           { id: 'challenges', label: 'Challenges' },
           { id: 'goals', label: 'Goals' },
           { id: 'jobs', label: 'Jobs' },
@@ -52,7 +53,7 @@ export function ModeBar({ activeTodos, pomodoro, setIsAddingTodo }: ModeBarProps
       </div>
 
       <span data-tauri-drag-region style={{ flex: 1 }} />
-      {appMode !== 'challenges' && appMode !== 'goals' && appMode !== 'jobs' && appMode !== 'time-canvas' && (
+      {appMode !== 'challenges' && appMode !== 'goals' && appMode !== 'jobs' && appMode !== 'time-canvas' && appMode !== 'mindmap' && (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {appMode === 'todos' && !activePomodoroId && activeTodos.length > 0 && (
           <button
