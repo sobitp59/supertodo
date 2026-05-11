@@ -5,14 +5,26 @@ interface MindmapNodeData {
   label: string;
   isRoot: boolean;
   color?: string;
+  shape?: 'rectangle' | 'rounded' | 'ellipse' | 'pill';
+  collapsed?: boolean;
+  childCount?: number;
+  hasNotes?: boolean;
+  highlighted?: boolean;
   onLabelChange: (newLabel: string) => void;
   onAddChild: () => void;
+  onAddSibling: () => void;
   onDelete: () => void;
+  onToggleCollapse: () => void;
+  onColorChange: (color: string) => void;
+  onShapeChange: (shape: string) => void;
 }
+
+const COLORS = ['#ffffff', '#ff6b6b', '#ffa94d', '#ffd43b', '#69db7c', '#4dabf7', '#cc5de8', '#ff8787'];
 
 function MindmapNodeComponent({ data, selected }: NodeProps & { data: MindmapNodeData }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(data.label);
+  const [showColorPicker, setShowColorPicker] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -48,10 +60,11 @@ function MindmapNodeComponent({ data, selected }: NodeProps & { data: MindmapNod
   };
 
   const accentColor = data.color || 'var(--accent)';
+  const shapeClass = data.shape ? `mindmap-node-shape-${data.shape}` : '';
 
   return (
     <div
-      className={`mindmap-node ${data.isRoot ? 'mindmap-node-root' : ''} ${selected ? 'mindmap-node-selected' : ''}`}
+      className={`mindmap-node ${data.isRoot ? 'mindmap-node-root' : ''} ${selected ? 'mindmap-node-selected' : ''} ${shapeClass} ${data.highlighted ? 'mindmap-node-highlighted' : ''}`}
       style={{ '--node-accent': accentColor } as React.CSSProperties}
       onDoubleClick={handleDoubleClick}
     >
@@ -67,11 +80,26 @@ function MindmapNodeComponent({ data, selected }: NodeProps & { data: MindmapNod
           onKeyDown={handleKeyDown}
         />
       ) : (
-        <div className="mindmap-node-label">{data.label}</div>
+        <div className="mindmap-node-label">
+          {data.label}
+          {data.hasNotes && <span className="mindmap-node-notes-indicator" title="Has notes">*</span>}
+        </div>
+      )}
+
+      {/* Collapse indicator */}
+      {data.childCount && data.childCount > 0 && (
+        <button
+          className={`mindmap-node-collapse-btn ${data.collapsed ? 'collapsed' : ''}`}
+          onClick={(e) => { e.stopPropagation(); data.onToggleCollapse(); }}
+          title={data.collapsed ? `Expand (${data.childCount} hidden)` : 'Collapse'}
+        >
+          {data.collapsed ? `+${data.childCount}` : '−'}
+        </button>
       )}
 
       <Handle type="source" position={Position.Bottom} className="mindmap-handle" />
 
+      {/* Actions on selected */}
       {selected && !isEditing && (
         <div className="mindmap-node-actions">
           <button
@@ -80,6 +108,21 @@ function MindmapNodeComponent({ data, selected }: NodeProps & { data: MindmapNod
             title="Add child (Tab)"
           >
             +
+          </button>
+          <button
+            className="mindmap-node-action-btn mindmap-node-action-sibling"
+            onClick={(e) => { e.stopPropagation(); data.onAddSibling(); }}
+            title="Add sibling (Enter)"
+          >
+            ↵
+          </button>
+          <button
+            className="mindmap-node-action-btn mindmap-node-action-color"
+            onClick={(e) => { e.stopPropagation(); setShowColorPicker(!showColorPicker); }}
+            title="Color"
+            style={{ background: data.color || 'transparent' }}
+          >
+            ●
           </button>
           {!data.isRoot && (
             <button
@@ -90,6 +133,20 @@ function MindmapNodeComponent({ data, selected }: NodeProps & { data: MindmapNod
               ×
             </button>
           )}
+        </div>
+      )}
+
+      {/* Color picker dropdown */}
+      {showColorPicker && selected && (
+        <div className="mindmap-color-picker" onClick={(e) => e.stopPropagation()}>
+          {COLORS.map(c => (
+            <button
+              key={c}
+              className={`mindmap-color-swatch ${data.color === c ? 'active' : ''}`}
+              style={{ background: c }}
+              onClick={() => { data.onColorChange(c); setShowColorPicker(false); }}
+            />
+          ))}
         </div>
       )}
     </div>
