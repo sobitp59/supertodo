@@ -291,9 +291,16 @@ interface AppState {
   setZenMode: (isZen: boolean, taskId?: string) => void;
 
   // Chat
-  chatHistory: ChatMessage[];
+  chatSessions: ChatSession[];
+  activeChatSessionId: string | null;
   chatOpen: boolean;
+  chatFullscreen: boolean;
   toggleChat: () => void;
+  setChatFullscreen: (fullscreen: boolean) => void;
+  createChatSession: (title?: string) => void;
+  deleteChatSession: (id: string) => void;
+  renameChatSession: (id: string, title: string) => void;
+  setActiveChatSession: (id: string | null) => void;
   addChatMessage: (message: ChatMessage) => void;
   clearChatHistory: () => void;
 }
@@ -311,6 +318,14 @@ export interface ChatAction {
   params: Record<string, any>;
   success?: boolean;
   resultText?: string;
+}
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: number;
+  updatedAt: number;
 }
 
 export const useStore = create<AppState>()(
@@ -377,13 +392,62 @@ export const useStore = create<AppState>()(
       setZenMode: (isZen, taskId) => set({ isZenMode: isZen, zenModeTaskId: taskId || null }),
 
       // Chat
-      chatHistory: [],
+      chatSessions: [],
+      activeChatSessionId: null,
       chatOpen: false,
+      chatFullscreen: false,
       toggleChat: () => set((state) => ({ chatOpen: !state.chatOpen })),
-      addChatMessage: (message) => set((state) => ({
-        chatHistory: [...state.chatHistory.slice(-49), message], // Keep last 50
+      setChatFullscreen: (fullscreen) => set({ chatFullscreen: fullscreen }),
+      createChatSession: (title) => set((state) => {
+        const newSession: ChatSession = {
+          id: uuidv4(),
+          title: title || `Chat ${state.chatSessions.length + 1}`,
+          messages: [],
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+        return {
+          chatSessions: [newSession, ...state.chatSessions],
+          activeChatSessionId: newSession.id,
+        };
+      }),
+      deleteChatSession: (id) => set((state) => ({
+        chatSessions: state.chatSessions.filter(s => s.id !== id),
+        activeChatSessionId: state.activeChatSessionId === id
+          ? (state.chatSessions.find(s => s.id !== id)?.id || null)
+          : state.activeChatSessionId,
       })),
-      clearChatHistory: () => set({ chatHistory: [] }),
+      renameChatSession: (id, title) => set((state) => ({
+        chatSessions: state.chatSessions.map(s => s.id === id ? { ...s, title } : s),
+      })),
+      setActiveChatSession: (id) => set({ activeChatSessionId: id }),
+      addChatMessage: (message) => set((state) => {
+        const sessionId = state.activeChatSessionId;
+        if (!sessionId) return state;
+        return {
+          chatSessions: state.chatSessions.map(s => {
+            if (s.id !== sessionId) return s;
+            // Auto-title on first user message
+            const isFirstMessage = s.messages.length === 0 && message.role === 'user';
+            const title = isFirstMessage ? message.content.slice(0, 40) + (message.content.length > 40 ? '...' : '') : s.title;
+            return {
+              ...s,
+              title,
+              messages: [...s.messages.slice(-99), message], // Keep last 100
+              updatedAt: Date.now(),
+            };
+          }),
+        };
+      }),
+      clearChatHistory: () => set((state) => {
+        const sessionId = state.activeChatSessionId;
+        if (!sessionId) return state;
+        return {
+          chatSessions: state.chatSessions.map(s =>
+            s.id === sessionId ? { ...s, messages: [], updatedAt: Date.now() } : s
+          ),
+        };
+      }),
 
       // Challenges
       challenges: [],
@@ -1107,7 +1171,7 @@ export const useStore = create<AppState>()(
       // Don't persist transient UI state — only persist actual data
       partialize: (state) => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { searchQuery, searchResults, isSearchOpen, isZenMode, zenModeTaskId, chatOpen, ...persisted } = state;
+        const { searchQuery, searchResults, isSearchOpen, isZenMode, zenModeTaskId, chatOpen, chatFullscreen, ...persisted } = state;
         return persisted;
       },
       // Custom storage wrapper with error handling to prevent silent data loss

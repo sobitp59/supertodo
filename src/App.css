@@ -4100,3 +4100,210 @@ body {
     height: 40px;
   }
 }
+
+
+
+/* ===== CHAT FULLSCREEN + SESSIONS ===== */
+
+.chat-panel-fullscreen {
+  width: 100% !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 300 !important;
+  box-shadow: none !important;
+  border-left: none !important;
+  display: flex !important;
+  flex-direction: row !important;
+}
+
+/* Session Sidebar */
+.chat-sidebar {
+  width: 240px;
+  min-width: 240px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.chat-panel:not(.chat-panel-fullscreen) .chat-sidebar {
+  display: none;
+}
+
+.chat-sidebar-header {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chat-new-session-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text-primary);
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.chat-new-session-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.chat-session-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.chat-session-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-secondary);
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+}
+
+.chat-session-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+}
+
+.chat-session-item.active {
+  background: rgba(255, 255, 255, 0.06);
+  border-left-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.chat-session-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-session-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.chat-session-item:hover .chat-session-actions {
+  opacity: 1;
+}
+
+.chat-session-actions button {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+}
+
+.chat-session-actions button:hover {
+  color: var(--text-primary);
+}
+
+.chat-session-rename-input {
+  width: 100%;
+  background: var(--bg-color);
+  border: 1px solid var(--accent);
+  color: var(--text-primary);
+  padding: 3px 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  outline: none;
+}
+
+.chat-sidebar-empty {
+  padding: 20px 12px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+/* Main chat area in fullscreen */
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-color);
+}
+
+.chat-panel:not(.chat-panel-fullscreen) .chat-main {
+  width: 100%;
+}
+
+/* Fullscreen messages area gets centered max-width */
+.chat-panel-fullscreen .chat-messages {
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 24px 32px;
+}
+
+.chat-panel-fullscreen .chat-input-wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 16px 32px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* Non-fullscreen: keep original side panel layout */
+.chat-panel:not(.chat-panel-fullscreen) {
+  flex-direction: column;
+}
+
+.chat-panel:not(.chat-panel-fullscreen) .chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Fullscreen: messages get more space */
+.chat-panel-fullscreen .chat-message-content {
+  max-width: 680px;
+}
+
+.chat-panel-fullscreen .chat-empty {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.chat-panel-fullscreen .chat-suggestion {
+  font-size: 12px;
+  padding: 12px 16px;
+}
+
+/* Responsive for fullscreen chat */
+@media (max-width: 600px) {
+  .chat-panel-fullscreen .chat-sidebar {
+    display: none;
+  }
+
+  .chat-panel-fullscreen .chat-messages {
+    padding: 16px;
+  }
+
+  .chat-panel-fullscreen .chat-input-wrapper {
+    padding: 12px 16px;
+  }
+}
