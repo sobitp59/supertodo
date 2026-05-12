@@ -1,4 +1,4 @@
-import { CaretLeft as ChevronLeft, CaretRight as ChevronRight, Gear as Settings } from '@phosphor-icons/react';
+import { Gear as Settings } from '@phosphor-icons/react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { isToday } from 'date-fns';
 import { motion } from 'framer-motion';
@@ -12,13 +12,11 @@ interface AppHeaderProps {
   currentDate: Date;
   progressPercent: number;
   pomodoro: PomodoroState & PomodoroControls;
-  onPrevDay: () => void;
-  onNextDay: () => void;
   onToday: () => void;
   onOpenSettings: () => void;
 }
 
-export function AppHeader({ currentDate, progressPercent, pomodoro, onPrevDay, onNextDay, onToday, onOpenSettings }: AppHeaderProps) {
+export function AppHeader({ currentDate, progressPercent, pomodoro, onToday, onOpenSettings }: AppHeaderProps) {
   const { settings } = useStore();
   const greeting = useGreeting();
   const { activePomodoroId, pomodoroTimeLeft, isPomodoroRunning, pomodoroPhase, setIsPomodoroRunning } = pomodoro;
@@ -34,15 +32,6 @@ export function AppHeader({ currentDate, progressPercent, pomodoro, onPrevDay, o
       <div data-tauri-drag-region>
         <span className="header-greeting">{greeting}, {settings.userName}</span>
         <div className="date-container">
-          <div className="nav-arrows">
-            <button className="nav-btn" onClick={onPrevDay}>
-              <ChevronLeft size={16} />
-            </button>
-            <button className="nav-btn" onClick={onNextDay}>
-              <ChevronRight size={16} />
-            </button>
-          </div>
-
           <span className="date-text" onDoubleClick={onToday}>
             {formatDateDisplay(currentDate)}
             {!isToday(currentDate) && (

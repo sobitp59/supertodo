@@ -1,10 +1,15 @@
 import { useState } from 'react';
-import { X } from '@phosphor-icons/react';
+import { CaretLeft as ChevronLeft, CaretRight as ChevronRight, X } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useStore } from '../../store';
 
-export function CategoryTabs() {
+interface CategoryTabsProps {
+  onPrevDay: () => void;
+  onNextDay: () => void;
+}
+
+export function CategoryTabs({ onPrevDay, onNextDay }: CategoryTabsProps) {
   const {
     appMode,
     categories,
@@ -26,6 +31,14 @@ export function CategoryTabs() {
 
   return (
     <div className="tabs-row">
+      <div className="nav-arrows">
+        <button className="nav-btn" onClick={onPrevDay}>
+          <ChevronLeft size={16} />
+        </button>
+        <button className="nav-btn" onClick={onNextDay}>
+          <ChevronRight size={16} />
+        </button>
+      </div>
       <AnimatePresence>
         {(appMode === 'todos' ? categories : bookmarkCategories).map((cat, index) => {
           const isActive = appMode === 'todos' ? activeCategoryId === cat.id : activeBookmarkCategoryId === cat.id;
