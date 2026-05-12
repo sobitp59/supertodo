@@ -97,9 +97,18 @@ body {
   padding: 0;
 }
 
+/* Unified top navigation area — header + mode bar + tabs */
+.app-top-nav {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-color);
+  flex-shrink: 0;
+}
+
 /* This allows the Tauri window to be dragged by the header */
 .header {
-  padding: 8px 12px;
+  padding: 12px 32px 8px 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -114,13 +123,13 @@ body {
 
 .date-text {
   font-family: 'Space Mono', monospace;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 700;
   position: relative;
 }
 
 .header-greeting {
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 400;
   color: var(--text-secondary);
   display: block;
@@ -166,7 +175,7 @@ body {
 }
 
 .action-row {
-  padding: 0 32px 24px 32px;
+  padding: 8px 32px 12px 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -215,10 +224,11 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 32px 16px 32px;
+  padding: 0 32px 12px 32px;
   border: none;
   overflow-x: auto;
   background: transparent;
+  margin-bottom: 0;
 }
 
 /* Hide scrollbar for tabs */
@@ -679,10 +689,7 @@ body {
 /* Link Preview and Mode Toggle Styles */
 .mode-toggle-wrapper {
   display: flex;
-  background: rgba(255, 255, 255, 0.03); /* Lighter frosted glass */
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.03);
   padding: 4px;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
