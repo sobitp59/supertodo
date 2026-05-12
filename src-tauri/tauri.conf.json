@@ -12,12 +12,12 @@
   "app": {
     "windows": [
       {
-        "title": "supertodoapp",
-        "width": 800,
-        "height": 600,
         "fullscreen": true,
+        "title": "supertodoapp",
         "transparent": true,
-        "decorations": false
+        "decorations": false,
+        "maximized": true,
+        "resizable": true
       }
     ],
     "security": {
