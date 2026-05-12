@@ -169,21 +169,23 @@ export default function App() {
     <div className={`app-wrapper ${isZenMode ? 'zen-active' : ''} ${isFullscreen ? 'fullscreen' : ''}`}>
       <Toaster theme="dark" position="top-right" toastOptions={{ style: { background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-primary)' } }} />
 
-      <AppHeader
-        currentDate={currentDate}
-        progressPercent={progressPercent}
-        pomodoro={pomodoro}
-        onPrevDay={handlePrevDay}
-        onNextDay={handleNextDay}
-        onToday={handleToday}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-      />
+      <div className="app-top-nav">
+        <AppHeader
+          currentDate={currentDate}
+          progressPercent={progressPercent}
+          pomodoro={pomodoro}
+          onPrevDay={handlePrevDay}
+          onNextDay={handleNextDay}
+          onToday={handleToday}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+        />
 
-      <ModeBar activeTodos={activeTodos} pomodoro={pomodoro} setIsAddingTodo={setIsAddingTodo} />
+        <ModeBar activeTodos={activeTodos} pomodoro={pomodoro} setIsAddingTodo={setIsAddingTodo} />
 
-      {appMode !== 'notes' && appMode !== 'challenges' && appMode !== 'goals' && appMode !== 'jobs' && appMode !== 'time-canvas' && appMode !== 'mindmap' && (
-        <CategoryTabs />
-      )}
+        {appMode !== 'notes' && appMode !== 'challenges' && appMode !== 'goals' && appMode !== 'jobs' && appMode !== 'time-canvas' && appMode !== 'mindmap' && (
+          <CategoryTabs />
+        )}
+      </div>
 
       {appMode === 'notes' ? (
         <NotesView />
