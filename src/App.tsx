@@ -174,8 +174,6 @@ export default function App() {
           currentDate={currentDate}
           progressPercent={progressPercent}
           pomodoro={pomodoro}
-          onPrevDay={handlePrevDay}
-          onNextDay={handleNextDay}
           onToday={handleToday}
           onOpenSettings={() => setIsSettingsOpen(true)}
         />
@@ -183,7 +181,7 @@ export default function App() {
         <ModeBar activeTodos={activeTodos} pomodoro={pomodoro} setIsAddingTodo={setIsAddingTodo} />
 
         {appMode !== 'notes' && appMode !== 'challenges' && appMode !== 'goals' && appMode !== 'jobs' && appMode !== 'time-canvas' && appMode !== 'mindmap' && (
-          <CategoryTabs />
+          <CategoryTabs onPrevDay={handlePrevDay} onNextDay={handleNextDay} />
         )}
       </div>
 
