@@ -17,6 +17,7 @@ import { ContextMenu, ContextMenuItem } from './components/ContextMenu';
 import { TimeCanvasView } from './components/time-canvas/TimeCanvasView';
 import { MindmapView } from './components/mindmap/MindmapView';
 import { ChatPanel } from './components/chat/ChatPanel';
+import { VoiceButton } from './components/VoiceButton';
 import { AppHeader } from './components/layout/AppHeader';
 import { ModeBar } from './components/layout/ModeBar';
 import { CategoryTabs } from './components/layout/CategoryTabs';
@@ -244,6 +245,7 @@ export default function App() {
       {isZenMode && zenModeTaskId && <ZenMode todoId={zenModeTaskId} onExit={() => setZenMode(false)} />}
       {contextMenu && <ContextMenu x={contextMenu.x} y={contextMenu.y} items={contextMenu.items} onClose={() => setContextMenu(null)} />}
       <ChatPanel />
+      <VoiceButton />
       <ChatToggleButton />
     </div>
     </>
