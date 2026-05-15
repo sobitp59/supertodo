@@ -44,9 +44,11 @@ export function VoiceButton() {
   // Hook up TTS for AI responses when voice session is active
   useVoiceFeedback({ enabled: voiceSessionActive, speak });
 
-  if (!isSupported) return null;
-
   const handleClick = () => {
+    if (!isSupported) {
+      // Show a temporary error - speech recognition not available
+      return;
+    }
     if (isSpeaking) {
       stopSpeaking();
     } else if (isListening) {
@@ -60,9 +62,9 @@ export function VoiceButton() {
     <>
       {/* Floating Voice Button */}
       <motion.button
-        className={`voice-btn ${isListening ? 'voice-btn--listening' : ''} ${isSpeaking ? 'voice-btn--speaking' : ''}`}
+        className={`voice-btn ${isListening ? 'voice-btn--listening' : ''} ${isSpeaking ? 'voice-btn--speaking' : ''} ${!isSupported ? 'voice-btn--unsupported' : ''}`}
         onClick={handleClick}
-        title={isListening ? 'Stop listening' : isSpeaking ? 'Stop speaking' : 'Voice command (hold to talk)'}
+        title={!isSupported ? 'Speech recognition not supported in this browser' : isListening ? 'Stop listening' : isSpeaking ? 'Stop speaking' : 'Voice command'}
         whileTap={{ scale: 0.9 }}
         whileHover={{ scale: 1.05 }}
       >
@@ -82,7 +84,9 @@ export function VoiceButton() {
 
         {/* Icon */}
         <span className="voice-btn__icon">
-          {isSpeaking ? (
+          {!isSupported ? (
+            <MicrophoneSlash size={20} weight="bold" />
+          ) : isSpeaking ? (
             <SpeakerHigh size={20} weight="bold" />
           ) : isListening ? (
             <Stop size={20} weight="bold" />
